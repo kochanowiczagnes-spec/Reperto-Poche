@@ -1,0 +1,146 @@
+const $ = s => document.querySelector(s);
+const app = $('#app');
+const monthLabels = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+const weekdayLabels = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+
+const medDefaults = [
+  {id:'propofol',name:'Propofol',class:'Hypnotique · Anesthésie générale',doc:true,indication:'Induction et entretien de l’anesthésie générale.',mechanism:'Potentialise l’activité GABAergique, entraînant une sédation-hypnose rapide.',contra:'Hypersensibilité connue ; vérifier les contre-indications et protocoles locaux.',dose:'À compléter selon le protocole de l’établissement.'},
+  {id:'cefazoline',name:'Cefazoline',class:'Antibiotique · Céphalosporine',indication:'Antibioprophylaxie chirurgicale.',mechanism:'Inhibe la synthèse de la paroi bactérienne.',contra:'Allergie aux bêta-lactamines ; adapter à la fonction rénale.',dose:'À compléter selon le protocole de l’établissement.'},
+  {id:'ondansetron',name:'Ondansétron',class:'Antiémétique',indication:'Prévention et traitement des nausées et vomissements.',mechanism:'Antagoniste sélectif des récepteurs 5-HT3.',contra:'Allongement du QT ; interactions et protocole local.',dose:'À compléter selon le protocole de l’établissement.'},
+  {id:'paracetamol',name:'Paracétamol',class:'Antalgique · Palier I',indication:'Traitement de la douleur et de la fièvre.',mechanism:'Action antalgique centrale.',contra:'Insuffisance hépatocellulaire sévère ; attention aux cumuls.',dose:'À compléter selon le protocole de l’établissement.'}
+];
+const establishmentDefaults = [
+  {id:'chan-nevers',name:'CHAN Nevers',city:'Nevers',service:'Bloc opératoire',note:'Repères personnels, accès et contacts à compléter.',contacts:[
+    {id:'c1',department:'Accueil standard',phone:'À renseigner',note:''},
+    {id:'c2',department:'Bloc opératoire',phone:'À renseigner',note:''},
+    {id:'c3',department:'Pharmacie',phone:'À renseigner',note:'Horaires et procédures'},
+    {id:'c4',department:'Réanimation',phone:'À renseigner',note:''}
+  ]},
+  {id:'montargis',name:'Centre hospitalier de Montargis',city:'Montargis',service:'Anesthésie',note:'Fiche de repérage à personnaliser.',contacts:[
+    {id:'c5',department:'Accueil standard',phone:'À renseigner',note:''},
+    {id:'c6',department:'Bloc opératoire',phone:'À renseigner',note:''}
+  ]}
+];
+const planningDefaults = [];
+const get = (key, fallback) => JSON.parse(localStorage.getItem(key) || 'null') || fallback;
+const set = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+const getMeds = () => get('rp-meds', medDefaults);
+const setMeds = value => set('rp-meds', value);
+const getEstablishments = () => get('rp-establishments', establishmentDefaults);
+const setEstablishments = value => set('rp-establishments', value);
+const getPlanning = () => get('rp-planning', planningDefaults);
+const setPlanning = value => set('rp-planning', value);
+const uid = prefix => `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+const escape = text => String(text || '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+const logo = () => '<div class="brand"><i class="logo" aria-hidden="true"></i><span>Réperto’Poche</span></div>';
+const nav = (active='home') => `<nav class="nav" aria-label="Navigation principale">
+  <button class="${active==='home'?'active':''}" data-go="home"><span>⌂</span>Accueil</button>
+  <button class="${active==='search'?'active':''}" data-go="search"><span>⌕</span>Recherche</button>
+  <button class="nav-add" data-add-menu aria-label="Ajouter">+</button>
+  <button class="${active==='planning'?'active':''}" data-go="planning"><span>▣</span>Planning</button>
+</nav>`;
+const topbar = () => `<header class="top">${logo()}<button class="avatar" aria-label="Profil">AK</button></header>`;
+const category = (cls, icon, title, meta, target) => `<button class="folder ${cls}" data-go="${target}"><span class="icon">${icon}</span><h2>${title}</h2><p>${meta}</p></button>`;
+const sortedContacts = establishment => [...(establishment.contacts || [])].sort((a,b) => a.department.localeCompare(b.department,'fr'));
+
+function home(){
+  const est = getEstablishments(); const events = getPlanning();
+  app.innerHTML = `${topbar()}<p class="eyebrow">Bonjour Agnès</p><h1 class="headline">Tout retrouver,<br>même dans l’urgence.</h1><p class="sub">Ton carnet professionnel, toujours dans la poche.</p>
+  <label class="search"><span>⌕</span><input id="global-search" placeholder="Rechercher dans Réperto’Poche" autocomplete="off" /></label>
+  <section class="grid">${category('est','⌂','Établissements',`${est.length} lieux`,'establishments')}${category('med','●','Médicaments',`${getMeds().length} fiches`,'meds')}${category('lang','文','Langues','8 dossiers','home')}${category('docs','▤','Protocoles','17 documents','home')}${category('notes','✎','Notes rapides','12 notes','home')}${category('plan','□','Planning',events.length ? `${events.length} créneau${events.length>1?'x':''}` : 'À organiser','planning')}</section>${nav('home')}`;
+  $('#global-search').addEventListener('input', e => globalSearch(e.target.value)); bind();
+}
+
+function meds(query=''){
+  const list = getMeds().filter(m => `${m.name} ${m.class}`.toLocaleLowerCase('fr').includes(query.toLocaleLowerCase('fr')));
+  app.innerHTML = `${topbar()}${sectionTitle('Médicaments',`${getMeds().length} fiches`,'home')}<label class="search"><span>⌕</span><input id="med-search" value="${escape(query)}" placeholder="Rechercher un médicament" autocomplete="off" /></label><button class="filter">Toutes les classes</button><section class="list">${list.length ? list.map(m => `<button class="item" data-med="${m.id}"><span class="item-icon med-icon">●</span><span class="item-main"><h2>${escape(m.name)}</h2><p>${escape(m.class)}</p></span>${m.doc?'<span class="paperclip">⌇ 1 doc.</span>':''}<span class="chev">›</span></button>`).join('') : empty('Aucun médicament trouvé.')}</section><button class="fab" data-add-med aria-label="Ajouter une fiche médicament">+</button>${nav()}`;
+  $('#med-search').addEventListener('input', e => meds(e.target.value)); bind();
+}
+function medDetail(id){
+  const med = getMeds().find(item => item.id === id); if(!med) return meds();
+  app.innerHTML = `${topbar()}${sectionTitle(escape(med.name),'Fiche médicament','meds')}<span class="tag med-tag">${escape(med.class)}</span>${med.doc?'<span class="tag soft-tag">⌇ 1 document joint</span>':''}${infoCard('Indication',med.indication)}${infoCard('Mécanisme d’action',med.mechanism)}${infoCard('Contre-indications & vigilance',med.contra)}${infoCard('Posologie',med.dose)}<button class="primary" data-edit-med="${med.id}">Modifier la fiche</button>${nav()}`; bind();
+}
+
+function establishments(query=''){
+  const list = getEstablishments().filter(place => `${place.name} ${place.city} ${place.service}`.toLocaleLowerCase('fr').includes(query.toLocaleLowerCase('fr')));
+  app.innerHTML = `${topbar()}${sectionTitle('Établissements',`${getEstablishments().length} lieux`,'home')}<label class="search"><span>⌕</span><input id="est-search" value="${escape(query)}" placeholder="Rechercher un établissement" autocomplete="off" /></label><p class="helper">Contacts classés de A à Z dans chaque établissement.</p><section class="list">${list.length ? list.map(place => `<button class="item establishment-item" data-est="${place.id}"><span class="item-icon est-icon">⌂</span><span class="item-main"><h2>${escape(place.name)}</h2><p>${escape(place.city || 'Ville à renseigner')} · ${sortedContacts(place).length} contact${sortedContacts(place).length>1?'s':''}</p></span><span class="chev">›</span></button>`).join('') : empty('Aucun établissement trouvé.')}</section><button class="fab" data-add-est aria-label="Ajouter un établissement">+</button>${nav()}`;
+  $('#est-search').addEventListener('input', e => establishments(e.target.value)); bind();
+}
+function establishmentDetail(id){
+  const place = getEstablishments().find(item => item.id === id); if(!place) return establishments();
+  const contacts = sortedContacts(place);
+  app.innerHTML = `${topbar()}${sectionTitle(escape(place.name),escape(place.city || 'Établissement'),'establishments')}<div class="place-summary"><span class="item-icon est-icon">⌂</span><div><strong>${escape(place.service || 'Service à renseigner')}</strong><p>${escape(place.note || 'Ajoute ici tes repères pratiques.')}</p></div></div><div class="subsection-head"><div><h2>Annuaire téléphonique</h2><p>${contacts.length} contact${contacts.length>1?'s':''} · ordre alphabétique</p></div><button class="small-add" data-add-contact="${place.id}" aria-label="Ajouter un contact">+</button></div><section class="list contacts">${contacts.length ? contacts.map(c => `<article class="contact-card"><span class="contact-letter">${escape(c.department.slice(0,1).toUpperCase())}</span><div class="item-main"><h2>${escape(c.department)}</h2><p>${escape(c.phone || 'À renseigner')}${c.note ? ` · ${escape(c.note)}` : ''}</p></div><button class="mini-edit" data-edit-contact="${place.id}|${c.id}" aria-label="Modifier ${escape(c.department)}">✎</button></article>`).join('') : empty('Aucun contact pour le moment.')}</section><button class="primary secondary" data-edit-est="${place.id}">Modifier l’établissement</button>${nav()}`; bind();
+}
+
+function planning(cursor = new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0')){
+  const [year, month] = cursor.split('-').map(Number); const events = getPlanning();
+  const monthStart = new Date(year, month-1, 1); const startDay = (monthStart.getDay()+6)%7; const days = new Date(year,month,0).getDate();
+  const previous = new Date(year,month-2,1); const next = new Date(year,month,1);
+  const cells = Array.from({length:startDay},() => '<span class="day empty-day"></span>');
+  for(let day=1; day<=days; day++){
+    const date = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dayEvents = events.filter(event => event.date===date);
+    cells.push(`<button class="day ${dayEvents.length?'has-event':''}" data-day="${date}" aria-label="${day} ${monthLabels[month-1]}"><b>${day}</b>${dayEvents.slice(0,2).map(event => `<i class="dot ${event.type}"></i>`).join('')}</button>`);
+  }
+  const monthEvents = events.filter(event => event.date.startsWith(`${year}-${String(month).padStart(2,'0')}`)).sort((a,b)=>a.date.localeCompare(b.date)||a.start.localeCompare(b.start));
+  app.innerHTML = `${topbar()}${sectionTitle('Planning',`${monthLabels[month-1]} ${year}`,'home')}<section class="planning-card"><div class="calendar-head"><button class="month-nav" data-month="${previous.getFullYear()}-${String(previous.getMonth()+1).padStart(2,'0')}">‹</button><h2>${monthLabels[month-1]} ${year}</h2><button class="month-nav" data-month="${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,'0')}">›</button></div><div class="weekdays">${weekdayLabels.map(d=>`<span>${d}</span>`).join('')}</div><div class="calendar-grid">${cells.join('')}</div></section><div class="legend"><span><i class="dot work"></i> Travail</span><span><i class="dot leave"></i> Indisponible</span><span><i class="dot personal"></i> Personnel</span></div><div class="subsection-head"><div><h2>Ce mois-ci</h2><p>${monthEvents.length ? `${monthEvents.length} créneau${monthEvents.length>1?'x':''}` : 'Ajoute tes gardes, congés et rendez-vous'}</p></div><button class="small-add" data-add-event aria-label="Ajouter un créneau">+</button></div><section class="list event-list">${monthEvents.length ? monthEvents.map(event => eventRow(event)).join('') : empty('Aucun créneau ce mois-ci.')}</section><button class="fab" data-add-event aria-label="Ajouter au planning">+</button>${nav('planning')}`; bind();
+}
+function eventRow(event){ const d = new Date(`${event.date}T12:00:00`); return `<button class="item event-item" data-edit-event="${event.id}"><span class="event-date"><b>${String(d.getDate()).padStart(2,'0')}</b><small>${['JAN','FÉV','MAR','AVR','MAI','JUN','JUL','AOÛ','SEP','OCT','NOV','DÉC'][d.getMonth()]}</small></span><span class="item-main"><h2>${escape(event.title)}</h2><p>${event.start || 'Heure à préciser'}${event.end ? ` – ${event.end}`:''}${event.place ? ` · ${escape(event.place)}`:''}</p></span><i class="event-type ${event.type}"></i><span class="chev">›</span></button>`; }
+
+function searchPage(){
+  app.innerHTML = `${topbar()}${sectionTitle('Recherche','Médicaments, établissements, planning','home')}<label class="search"><span>⌕</span><input id="search-page-input" placeholder="Rechercher dans Réperto’Poche" autocomplete="off" autofocus /></label><p class="helper">Retrouve un médicament, un établissement, un service ou un créneau.</p>${nav('search')}`;
+  $('#search-page-input').addEventListener('input', event => { if(event.target.value.trim()) globalSearch(event.target.value); }); bind();
+}
+function globalSearch(query){
+  const term = query.trim().toLocaleLowerCase('fr'); if(!term) return searchPage();
+  const meds = getMeds().filter(m => `${m.name} ${m.class} ${m.indication}`.toLocaleLowerCase('fr').includes(term));
+  const establishmentsFound = getEstablishments().filter(p => `${p.name} ${p.city} ${p.service} ${(p.contacts||[]).map(c=>`${c.department} ${c.phone}`).join(' ')}`.toLocaleLowerCase('fr').includes(term));
+  const events = getPlanning().filter(e => `${e.title} ${e.place}`.toLocaleLowerCase('fr').includes(term));
+  app.innerHTML = `${topbar()}${sectionTitle('Résultats',`pour « ${escape(query)} »`,'home')}<section class="search-results">${meds.length?`<h2>Médicaments</h2><section class="list">${meds.map(m=>`<button class="item" data-med="${m.id}"><span class="item-icon med-icon">●</span><span class="item-main"><h2>${escape(m.name)}</h2><p>${escape(m.class)}</p></span><span class="chev">›</span></button>`).join('')}</section>`:''}${establishmentsFound.length?`<h2>Établissements</h2><section class="list">${establishmentsFound.map(p=>`<button class="item" data-est="${p.id}"><span class="item-icon est-icon">⌂</span><span class="item-main"><h2>${escape(p.name)}</h2><p>${escape(p.city)}</p></span><span class="chev">›</span></button>`).join('')}</section>`:''}${events.length?`<h2>Planning</h2><section class="list">${events.map(eventRow).join('')}</section>`:''}${!meds.length&&!establishmentsFound.length&&!events.length?empty('Aucun résultat pour le moment.'):''}</section>${nav('search')}`; bind();
+}
+
+function sectionTitle(title, subtitle, back){ return `<div class="section-head"><button class="back" data-go="${back}" aria-label="Retour">‹</button><div><h1>${title}</h1><p>${subtitle}</p></div></div>`; }
+function infoCard(title,text){ return `<article class="detail-card"><h2>${title}</h2><p>${escape(text || 'À compléter.')}</p></article>`; }
+function empty(text){ return `<p class="empty">${text}</p>`; }
+function toast(message){ const el=$('#toast'); el.textContent=message; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),2600); }
+
+function medForm(existing){
+  const med = existing || {name:'',class:'',indication:'',mechanism:'',contra:'',dose:''};
+  openSheet(`${existing?'Modifier':'Nouvelle'} fiche médicament`, `<div class="field"><label>Nom du médicament</label><input required name="name" value="${escape(med.name)}" placeholder="Ex. Propofol"></div><div class="field"><label>Classe / usage</label><input required name="class" value="${escape(med.class)}" placeholder="Ex. Hypnotique · Anesthésie"></div><div class="field"><label>Indication</label><textarea name="indication">${escape(med.indication)}</textarea></div><div class="field"><label>Mécanisme d’action</label><textarea name="mechanism">${escape(med.mechanism)}</textarea></div><div class="field"><label>Contre-indications & vigilance</label><textarea name="contra">${escape(med.contra)}</textarea></div><div class="field"><label>Posologie</label><textarea name="dose">${escape(med.dose)}</textarea></div>`, values => { let list=getMeds(); if(existing) list=list.map(item=>item.id===existing.id?{...item,...values}:item); else list.push({id:uid('med'),...values,doc:false}); setMeds(list); meds(); toast('Fiche enregistrée sur cet iPhone'); });
+}
+function establishmentForm(existing){
+  const place = existing || {name:'',city:'',service:'',note:'',contacts:[]};
+  openSheet(`${existing?'Modifier':'Nouvel'} établissement`, `<div class="field"><label>Nom de l’établissement</label><input required name="name" value="${escape(place.name)}" placeholder="Ex. CHAN Nevers"></div><div class="field"><label>Ville</label><input name="city" value="${escape(place.city)}" placeholder="Ex. Nevers"></div><div class="field"><label>Service principal</label><input name="service" value="${escape(place.service)}" placeholder="Ex. Bloc opératoire"></div><div class="field"><label>Repères personnels</label><textarea name="note" placeholder="Accès, vestiaires, habitudes utiles…">${escape(place.note)}</textarea></div>`, values => {let list=getEstablishments();if(existing)list=list.map(item=>item.id===existing.id?{...item,...values}:item);else list.push({id:uid('est'),...values,contacts:[]});setEstablishments(list);establishments();toast('Établissement enregistré');});
+}
+function contactForm(placeId, existing){
+  const contact = existing || {department:'',phone:'',note:''};
+  openSheet(`${existing?'Modifier':'Nouveau'} contact`, `<div class="field"><label>Service / interlocuteur</label><input required name="department" value="${escape(contact.department)}" placeholder="Ex. Bloc opératoire"></div><div class="field"><label>Téléphone</label><input name="phone" inputmode="tel" value="${escape(contact.phone)}" placeholder="Ex. 03 00 00 00 00"></div><div class="field"><label>Note utile</label><textarea name="note" placeholder="Ex. poste 1234, horaires…">${escape(contact.note)}</textarea></div>`, values => {const list=getEstablishments().map(place=>{if(place.id!==placeId)return place;const contacts=place.contacts||[];return {...place,contacts:existing?contacts.map(item=>item.id===existing.id?{...item,...values}:item):[...contacts,{id:uid('contact'),...values}]};});setEstablishments(list);establishmentDetail(placeId);toast('Contact enregistré');});
+}
+function eventForm(existing, date=''){
+  const today = new Date(); const planned = existing || {date:date||today.toISOString().slice(0,10),title:'',place:'',start:'',end:'',type:'work',note:''};
+  openSheet(`${existing?'Modifier':'Nouveau'} créneau`, `<div class="field"><label>Date</label><input required type="date" name="date" value="${escape(planned.date)}"></div><div class="field"><label>Type</label><select name="type"><option value="work" ${planned.type==='work'?'selected':''}>Travail</option><option value="leave" ${planned.type==='leave'?'selected':''}>Indisponible / congé</option><option value="personal" ${planned.type==='personal'?'selected':''}>Personnel</option></select></div><div class="field"><label>Intitulé</label><input required name="title" value="${escape(planned.title)}" placeholder="Ex. Vacation IADE"></div><div class="field"><label>Établissement / lieu</label><input name="place" value="${escape(planned.place)}" placeholder="Ex. CHAN Nevers"></div><div class="time-fields"><div class="field"><label>Début</label><input type="time" name="start" value="${escape(planned.start)}"></div><div class="field"><label>Fin</label><input type="time" name="end" value="${escape(planned.end)}"></div></div><div class="field"><label>Note</label><textarea name="note" placeholder="Service, repère, rappel…">${escape(planned.note)}</textarea></div>`, values => {let list=getPlanning();if(existing)list=list.map(item=>item.id===existing.id?{...item,...values}:item);else list.push({id:uid('event'),...values});setPlanning(list);planning(values.date.slice(0,7));toast('Créneau enregistré sur cet iPhone');});
+}
+function openSheet(title, body, onSave){
+  const modal=document.createElement('div');modal.className='modal';modal.innerHTML=`<form class="sheet"><div class="sheet-top"><h2>${title}</h2><button type="button" class="close" data-close>×</button></div>${body}<button class="primary">Enregistrer</button></form>`;document.body.append(modal);modal.querySelector('[data-close]').onclick=()=>modal.remove();modal.querySelector('form').onsubmit=e=>{e.preventDefault();onSave(Object.fromEntries(new FormData(e.target)));modal.remove();};
+}
+function addMenu(){
+  const modal=document.createElement('div');modal.className='modal menu-modal';modal.innerHTML=`<section class="sheet quick-sheet"><div class="sheet-top"><h2>Ajouter</h2><button type="button" class="close" data-close>×</button></div><button class="add-choice" data-choice="event"><span class="plan-badge">□</span><span><strong>Créneau de planning</strong><small>Travail, congé ou rendez-vous</small></span></button><button class="add-choice" data-choice="est"><span class="est-badge">⌂</span><span><strong>Établissement</strong><small>Avec son annuaire téléphonique</small></span></button><button class="add-choice" data-choice="med"><span class="med-badge">●</span><span><strong>Fiche médicament</strong><small>Indication, vigilance et posologie</small></span></button></section>`;document.body.append(modal);modal.querySelector('[data-close]').onclick=()=>modal.remove();modal.querySelectorAll('[data-choice]').forEach(button=>button.onclick=()=>{const choice=button.dataset.choice;modal.remove();if(choice==='event')eventForm();if(choice==='est')establishmentForm();if(choice==='med')medForm();});
+}
+function bind(){
+  document.querySelectorAll('[data-go]').forEach(button=>button.onclick=()=>{const target=button.dataset.go;if(target==='home')home();else if(target==='meds')meds();else if(target==='establishments')establishments();else if(target==='planning')planning();else if(target==='search')searchPage();});
+  document.querySelectorAll('[data-med]').forEach(button=>button.onclick=()=>medDetail(button.dataset.med));
+  document.querySelectorAll('[data-est]').forEach(button=>button.onclick=()=>establishmentDetail(button.dataset.est));
+  document.querySelectorAll('[data-add-med]').forEach(button=>button.onclick=()=>medForm());
+  document.querySelectorAll('[data-edit-med]').forEach(button=>button.onclick=()=>medForm(getMeds().find(item=>item.id===button.dataset.editMed)));
+  document.querySelectorAll('[data-add-est]').forEach(button=>button.onclick=()=>establishmentForm());
+  document.querySelectorAll('[data-edit-est]').forEach(button=>button.onclick=()=>establishmentForm(getEstablishments().find(item=>item.id===button.dataset.editEst)));
+  document.querySelectorAll('[data-add-contact]').forEach(button=>button.onclick=()=>contactForm(button.dataset.addContact));
+  document.querySelectorAll('[data-edit-contact]').forEach(button=>button.onclick=()=>{const [placeId,contactId]=button.dataset.editContact.split('|');const place=getEstablishments().find(item=>item.id===placeId);contactForm(placeId,(place.contacts||[]).find(item=>item.id===contactId));});
+  document.querySelectorAll('[data-add-event]').forEach(button=>button.onclick=()=>eventForm());
+  document.querySelectorAll('[data-edit-event]').forEach(button=>button.onclick=()=>eventForm(getPlanning().find(item=>item.id===button.dataset.editEvent)));
+  document.querySelectorAll('[data-day]').forEach(button=>button.onclick=()=>eventForm(null,button.dataset.day));
+  document.querySelectorAll('[data-month]').forEach(button=>button.onclick=()=>planning(button.dataset.month));
+  document.querySelectorAll('[data-add-menu]').forEach(button=>button.onclick=addMenu);
+}
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+home();
