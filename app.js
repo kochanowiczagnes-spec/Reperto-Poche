@@ -85,14 +85,15 @@ const nav = (active='home') => `<nav class="nav" aria-label="Navigation principa
 </nav>`;
 const topbar = () => `<header class="top">${logo()}<button class="avatar" data-go="profile" aria-label="Profil">AK</button></header>`;
 const category = (cls, icon, title, meta, target) => `<button class="folder ${cls}" data-go="${target}"><span class="icon">${icon}</span><h2>${title}</h2><p>${meta}</p></button>`;
-const sortByName = (a,b) => String(a.name || a.title || '').localeCompare(String(b.name || b.title || ''),'fr',{sensitivity:'base',numeric:true});
+const searchText = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr');
+const sortByName = (a,b) => searchText(a.name || a.title).localeCompare(searchText(b.name || b.title),'fr',{numeric:true});
 const sortedContacts = establishment => [...(establishment.contacts || [])].sort((a,b) => a.department.localeCompare(b.department,'fr'));
 
 function home(){
   const est = getEstablishments(); const events = getPlanning();
   app.innerHTML = `${topbar()}<p class="eyebrow">Bonjour Agnès</p><h1 class="headline">Tout retrouver,<br>même dans l’urgence.</h1><p class="sub">Ton carnet professionnel, toujours dans la poche.</p>
   <label class="search"><span>⌕</span><input id="global-search" placeholder="Rechercher dans Réperto’Poche" autocomplete="off" /></label>
-  <section class="grid">${category('est','⌂','Établissements',`${est.length} lieux`,'establishments')}${category('med','●','Médicaments',`${getMeds().length} fiches`,'meds')}${category('surgery','✚','Chirurgie',`${get('rp-surgery', surgeryDefaults).length} repère${get('rp-surgery', surgeryDefaults).length>1?'s':''}`,'surgery')}${category('pediatrics','♧','Pédiatrie',`${get('rp-pediatrics', pediatricsDefaults).length} repère${get('rp-pediatrics', pediatricsDefaults).length>1?'s':''}`,'pediatrics')}${category('lang','文','Langues',`${get('rp-languages', languageDefaults).length} dossiers`,'languages')}${category('docs','▤','Protocoles',`${get('rp-protocols', protocolDefaults).length} document${get('rp-protocols', protocolDefaults).length>1?'s':''}`,'protocols')}${category('notes','✎','Notes rapides',`${get('rp-notes', noteDefaults).length} note${get('rp-notes', noteDefaults).length>1?'s':''}`,'notes')}${category('plan','□','Planning',events.length ? `${events.length} créneau${events.length>1?'x':''}` : 'À organiser','planning')}</section>${nav('home')}`;
+  <section id="home-folders" class="grid">${category('est','⌂','Établissements',`${est.length} lieux`,'establishments')}${category('med','●','Médicaments',`${getMeds().length} fiches`,'meds')}${category('surgery','✚','Chirurgie',`${get('rp-surgery', surgeryDefaults).length} repère${get('rp-surgery', surgeryDefaults).length>1?'s':''}`,'surgery')}${category('pediatrics','♧','Pédiatrie',`${get('rp-pediatrics', pediatricsDefaults).length} repère${get('rp-pediatrics', pediatricsDefaults).length>1?'s':''}`,'pediatrics')}${category('lang','文','Langues',`${get('rp-languages', languageDefaults).length} dossiers`,'languages')}${category('docs','▤','Protocoles',`${get('rp-protocols', protocolDefaults).length} document${get('rp-protocols', protocolDefaults).length>1?'s':''}`,'protocols')}${category('notes','✎','Notes rapides',`${get('rp-notes', noteDefaults).length} note${get('rp-notes', noteDefaults).length>1?'s':''}`,'notes')}${category('plan','□','Planning',events.length ? `${events.length} créneau${events.length>1?'x':''}` : 'À organiser','planning')}</section><section id="home-search-results" class="search-results" hidden></section>${nav('home')}`;
   $('#global-search').addEventListener('input', e => globalSearch(e.target.value)); bind();
 }
 
@@ -101,10 +102,18 @@ function profile(){
   bind();
 }
 
-function meds(query=''){
-  const list = [...getMeds()].filter(m => `${m.name} ${m.class}`.toLocaleLowerCase('fr').includes(query.toLocaleLowerCase('fr'))).sort(sortByName);
-  app.innerHTML = `${topbar()}${sectionTitle('Médicaments',`${getMeds().length} fiches`,'home')}<label class="search"><span>⌕</span><input id="med-search" value="${escape(query)}" placeholder="Rechercher un médicament" autocomplete="off" /></label><button class="filter">Toutes les classes</button><section class="list">${list.length ? list.map(m => `<button class="item" data-med="${m.id}" data-hold="med|${m.id}" aria-label="${escape(m.name)}. Maintenir pour modifier ou supprimer."><span class="item-icon med-icon">●</span><span class="item-main"><h2>${escape(m.name)}</h2><p>${escape(m.class)}</p></span>${m.attachment?'<span class="paperclip">⌇ 1 fichier</span>':''}<span class="chev">›</span></button>`).join('') : empty('Aucun médicament trouvé.')}</section><button class="fab" data-add-med aria-label="Ajouter une fiche médicament">+</button>${nav()}`;
-  $('#med-search').addEventListener('input', e => meds(e.target.value)); bind();
+function medMatches(med,query){ return searchText(`${med.name} ${med.class} ${med.indication} ${med.mechanism} ${med.contra} ${med.dose}`).includes(searchText(query)); }
+function medListMarkup(query=''){
+  const list=[...getMeds()].filter(med=>medMatches(med,query)).sort(sortByName);
+  return list.length ? list.map(m => `<button class="item" data-med="${m.id}" data-hold="med|${m.id}" aria-label="${escape(m.name)}. Maintenir pour modifier ou supprimer."><span class="item-icon med-icon">●</span><span class="item-main"><h2>${escape(m.name)}</h2><p>${escape(m.class)}</p></span>${m.attachment?'<span class="paperclip">⌇ 1 fichier</span>':''}<span class="chev">›</span></button>`).join('') : empty('Aucun médicament trouvé.');
+}
+function refreshMedList(query=''){
+  const list=$('#med-list');if(!list)return;
+  list.innerHTML=medListMarkup(query);bind();
+}
+function meds(){
+  app.innerHTML = `${topbar()}${sectionTitle('Médicaments',`${getMeds().length} fiches`,'home')}<label class="search"><span>⌕</span><input id="med-search" placeholder="Rechercher un médicament" autocomplete="off" /></label><button class="filter">Toutes les classes</button><section id="med-list" class="list">${medListMarkup()}</section><button class="fab" data-add-med aria-label="Ajouter une fiche médicament">+</button>${nav()}`;
+  $('#med-search').addEventListener('input', event=>refreshMedList(event.target.value)); bind();
 }
 function medDetail(id){
   const med = getMeds().find(item => item.id === id); if(!med) return meds();
@@ -192,7 +201,21 @@ function renderSearchResults(query){
   target.innerHTML=`<p class="helper">Résultats pour « ${escape(query)} »</p>${meds.length?`<h2>Médicaments</h2><section class="list">${meds.map(m=>`<button class="item" data-med="${m.id}"><span class="item-icon med-icon">●</span><span class="item-main"><h2>${escape(m.name)}</h2><p>${escape(m.class)}</p></span><span class="chev">›</span></button>`).join('')}</section>`:''}${establishmentsFound.length?`<h2>Établissements</h2><section class="list">${establishmentsFound.map(p=>`<button class="item" data-est="${p.id}"><span class="item-icon est-icon">⌂</span><span class="item-main"><h2>${escape(p.name)}</h2><p>${escape(p.city)}</p></span><span class="chev">›</span></button>`).join('')}</section>`:''}${events.length?`<h2>Planning</h2><section class="list">${events.map(eventRow).join('')}</section>`:''}${resourceMarkup||(!meds.length&&!establishmentsFound.length&&!events.length?empty('Aucun résultat pour le moment.'): '')}`;
   bind();
 }
-function globalSearch(query){ searchPage(query); }
+function globalSearch(query){
+  const folders=$('#home-folders'),results=$('#home-search-results');
+  if(!folders||!results)return searchPage(query);
+  const term=query.trim();
+  folders.hidden=!!term;results.hidden=!term;
+  if(!term){results.innerHTML='';return;}
+  const contains=value=>searchText(value).includes(searchText(term));
+  const meds=[...getMeds()].filter(m=>contains(`${m.name} ${m.class} ${m.indication} ${m.mechanism} ${m.contra} ${m.dose}`)).sort(sortByName);
+  const establishmentsFound=getEstablishments().filter(p=>contains(`${p.name} ${p.city} ${p.service} ${p.note} ${(p.contacts||[]).map(c=>`${c.department} ${c.phone} ${c.note}`).join(' ')}`));
+  const events=getPlanning().filter(e=>contains(`${e.title} ${e.place} ${e.note}`));
+  const resources=[['Langues étrangères',get('rp-languages',languageDefaults)],['Protocoles',get('rp-protocols',protocolDefaults)],['Notes rapides',get('rp-notes',noteDefaults)],['Chirurgie',get('rp-surgery',surgeryDefaults)],['Pédiatrie',get('rp-pediatrics',pediatricsDefaults)]].map(([title,items])=>[title,items.filter(item=>contains(`${item.title} ${item.text} ${(item.entries||[]).map(entry=>`${entry.title} ${entry.text}`).join(' ')}`))]);
+  const resourceMarkup=resources.map(([title,items])=>resourceSearchSection(title,items)).join('');
+  results.innerHTML=`<p class="helper">Résultats pour « ${escape(term)} »</p>${meds.length?`<h2>Médicaments</h2><section class="list">${meds.map(m=>`<button class="item" data-med="${m.id}"><span class="item-icon med-icon">●</span><span class="item-main"><h2>${escape(m.name)}</h2><p>${escape(m.class)}</p></span><span class="chev">›</span></button>`).join('')}</section>`:''}${establishmentsFound.length?`<h2>Établissements</h2><section class="list">${establishmentsFound.map(p=>`<button class="item" data-est="${p.id}"><span class="item-icon est-icon">⌂</span><span class="item-main"><h2>${escape(p.name)}</h2><p>${escape(p.city)}</p></span><span class="chev">›</span></button>`).join('')}</section>`:''}${events.length?`<h2>Planning</h2><section class="list">${events.map(eventRow).join('')}</section>`:''}${resourceMarkup||(!meds.length&&!establishmentsFound.length&&!events.length?empty('Aucun résultat pour le moment.'): '')}`;
+  bind();
+}
 
 function sectionTitle(title, subtitle, back){ return `<div class="section-head"><button class="back" data-go="${back}" aria-label="Retour">‹</button><div><h1>${title}</h1><p>${subtitle}</p></div></div>`; }
 function infoCard(title,text){ return `<article class="detail-card"><h2>${title}</h2><p>${escape(text || 'À compléter.')}</p></article>`; }
@@ -308,6 +331,6 @@ document.addEventListener('contextmenu',event=>{
 if('serviceWorker' in navigator){
   let refreshing=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;window.location.reload();}});
-  navigator.serviceWorker.register('sw.js?v=19',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=20',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
 }
 home();
