@@ -1,4 +1,4 @@
-RÉPERTO’POCHE — MISE À JOUR v15
+RÉPERTO’POCHE — MISE À JOUR v16
 
 Application web installable (PWA) pour iPhone, iPad et Mac.
 
@@ -7,7 +7,7 @@ CORRECTIONS DE CETTE VERSION
 - le bouton « Ouvrir le fichier » utilise l’aperçu/lecteur d’iPhone lorsque le format est compatible ; les formats non pris en charge restent proposés par iOS au partage ou au téléchargement ;
 - les liens de fichiers ne déclenchent plus l’appui prolongé de la fiche par erreur ;
 - lors d’une modification sans nouveau fichier, le fichier déjà joint est conservé ;
-- la limite est de 2 Mo par fichier ;
+- les photos provenant de l’iPhone sont acceptées jusqu’à 20 Mo, puis réduites automatiquement avant l’enregistrement ; les autres fichiers restent limités à 2 Mo ;
 - les rubriques Protocoles, Langues étrangères et Notes rapides s’ouvrent correctement ;
 - une nouvelle version de cache force l’actualisation de l’application après publication.
 
