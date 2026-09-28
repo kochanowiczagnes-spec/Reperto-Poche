@@ -52,11 +52,14 @@ const backupCollections = {
   'rp-pediatrics': pediatricsDefaults
 };
 const backupCollectionKeys = Object.keys(backupCollections);
+// Les sauvegardes antérieures à l’ajout de Chirurgie et Pédiatrie ne contiennent pas ces deux rubriques.
+// Elles restent restaurables : les nouvelles rubriques seront créées vides.
+const requiredBackupKeys = backupCollectionKeys.filter(key=>!['rp-surgery','rp-pediatrics'].includes(key));
 function makeBackup(){
   return {app:'Réperto’Poche',format:'backup',version:1,exportedAt:new Date().toISOString(),data:Object.fromEntries(backupCollectionKeys.map(key=>[key,get(key,backupCollections[key])]))};
 }
 function validBackup(backup){
-  return !!(backup&&backup.app==='Réperto’Poche'&&backup.format==='backup'&&backup.data&&backupCollectionKeys.every(key=>Array.isArray(backup.data[key])));
+  return !!(backup&&backup.app==='Réperto’Poche'&&backup.format==='backup'&&backup.data&&requiredBackupKeys.every(key=>Array.isArray(backup.data[key]))&&backupCollectionKeys.every(key=>!(key in backup.data)||Array.isArray(backup.data[key])));
 }
 function downloadBackup(){
   const backup=makeBackup(),stamp=new Date().toISOString().slice(0,10),blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');
@@ -64,7 +67,7 @@ function downloadBackup(){
 }
 function restoreBackup(backup){
   const before=Object.fromEntries(backupCollectionKeys.map(key=>[key,localStorage.getItem(key)]));
-  try{backupCollectionKeys.forEach(key=>set(key,backup.data[key]));}
+  try{backupCollectionKeys.forEach(key=>set(key,Array.isArray(backup.data[key])?backup.data[key]:backupCollections[key]));}
   catch(error){backupCollectionKeys.forEach(key=>before[key]===null?localStorage.removeItem(key):localStorage.setItem(key,before[key]));throw new Error('Espace insuffisant : la restauration n’a pas été appliquée.');}
 }
 function chooseBackup(){
