@@ -38,6 +38,34 @@ const getEstablishments = () => get('rp-establishments', establishmentDefaults);
 const setEstablishments = value => set('rp-establishments', value);
 const getPlanning = () => get('rp-planning', planningDefaults);
 const setPlanning = value => set('rp-planning', value);
+const backupCollections = {
+  'rp-meds': medDefaults,
+  'rp-establishments': establishmentDefaults,
+  'rp-planning': planningDefaults,
+  'rp-languages': languageDefaults,
+  'rp-protocols': protocolDefaults,
+  'rp-notes': noteDefaults
+};
+const backupCollectionKeys = Object.keys(backupCollections);
+function makeBackup(){
+  return {app:'Réperto’Poche',format:'backup',version:1,exportedAt:new Date().toISOString(),data:Object.fromEntries(backupCollectionKeys.map(key=>[key,get(key,backupCollections[key])]))};
+}
+function validBackup(backup){
+  return !!(backup&&backup.app==='Réperto’Poche'&&backup.format==='backup'&&backup.data&&backupCollectionKeys.every(key=>Array.isArray(backup.data[key])));
+}
+function downloadBackup(){
+  const backup=makeBackup(),stamp=new Date().toISOString().slice(0,10),blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');
+  link.href=url;link.download=`Reperto-Poche-sauvegarde-${stamp}.json`;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Sauvegarde téléchargée : garde-la dans Fichiers ou iCloud Drive');
+}
+function restoreBackup(backup){
+  const before=Object.fromEntries(backupCollectionKeys.map(key=>[key,localStorage.getItem(key)]));
+  try{backupCollectionKeys.forEach(key=>set(key,backup.data[key]));}
+  catch(error){backupCollectionKeys.forEach(key=>before[key]===null?localStorage.removeItem(key):localStorage.setItem(key,before[key]));throw new Error('Espace insuffisant : la restauration n’a pas été appliquée.');}
+}
+function chooseBackup(){
+  const input=document.createElement('input');input.type='file';input.accept='application/json,.json';
+  input.onchange=()=>{const file=input.files&&input.files[0];if(!file)return;if(file.size>25*1024*1024)return toast('Cette sauvegarde dépasse 25 Mo.');const reader=new FileReader();reader.onload=()=>{try{const backup=JSON.parse(reader.result);if(!validBackup(backup))throw new Error();const date=backup.exportedAt?new Date(backup.exportedAt).toLocaleDateString('fr-FR'):'date inconnue';menuSheet('Restaurer cette sauvegarde ?',[{id:'restore',label:'Restaurer mes données',hint:`Sauvegarde du ${date} · remplace les données actuelles`,icon:'↻',danger:true,action:()=>{try{restoreBackup(backup);profile();toast('Sauvegarde restaurée sur cet iPhone');}catch(error){toast(error.message);}}},{id:'cancel',label:'Annuler',hint:'Conserver les données actuelles',icon:'‹',action:()=>{}}]);}catch{toast('Ce fichier n’est pas une sauvegarde Réperto’Poche valide.');}};reader.onerror=()=>toast('Lecture du fichier impossible.');reader.readAsText(file);};input.click();
+}
 const uid = prefix => `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const escape = text => String(text || '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
 const logo = () => '<div class="brand"><i class="logo" aria-hidden="true"></i><span>Réperto’Poche</span></div>';
@@ -47,7 +75,7 @@ const nav = (active='home') => `<nav class="nav" aria-label="Navigation principa
   <button class="nav-add" data-add-menu aria-label="Ajouter">+</button>
   <button class="${active==='planning'?'active':''}" data-go="planning"><span>▣</span>Planning</button>
 </nav>`;
-const topbar = () => `<header class="top">${logo()}<button class="avatar" aria-label="Profil">AK</button></header>`;
+const topbar = () => `<header class="top">${logo()}<button class="avatar" data-go="profile" aria-label="Profil">AK</button></header>`;
 const category = (cls, icon, title, meta, target) => `<button class="folder ${cls}" data-go="${target}"><span class="icon">${icon}</span><h2>${title}</h2><p>${meta}</p></button>`;
 const sortedContacts = establishment => [...(establishment.contacts || [])].sort((a,b) => a.department.localeCompare(b.department,'fr'));
 
@@ -57,6 +85,11 @@ function home(){
   <label class="search"><span>⌕</span><input id="global-search" placeholder="Rechercher dans Réperto’Poche" autocomplete="off" /></label>
   <section class="grid">${category('est','⌂','Établissements',`${est.length} lieux`,'establishments')}${category('med','●','Médicaments',`${getMeds().length} fiches`,'meds')}${category('lang','文','Langues',`${get('rp-languages', languageDefaults).length} dossiers`,'languages')}${category('docs','▤','Protocoles',`${get('rp-protocols', protocolDefaults).length} document${get('rp-protocols', protocolDefaults).length>1?'s':''}`,'protocols')}${category('notes','✎','Notes rapides',`${get('rp-notes', noteDefaults).length} note${get('rp-notes', noteDefaults).length>1?'s':''}`,'notes')}${category('plan','□','Planning',events.length ? `${events.length} créneau${events.length>1?'x':''}` : 'À organiser','planning')}</section>${nav('home')}`;
   $('#global-search').addEventListener('input', e => globalSearch(e.target.value)); bind();
+}
+
+function profile(){
+  app.innerHTML=`${topbar()}${sectionTitle('Mes données','Sauvegarde privée sur cet iPhone','home')}<section class="detail-card backup-card"><span class="backup-icon">◈</span><div><h2>Garde une copie de tes repères</h2><p>Tes fiches, établissements, langues, notes et planning restent sur cet iPhone. Une sauvegarde te permet de les retrouver après un changement d’iPhone ou un effacement de Safari.</p></div></section><section class="backup-actions"><button class="backup-action" data-backup-export><span class="backup-action-icon">↓</span><span><strong>Sauvegarder mes données</strong><small>Fichier privé à placer dans Fichiers ou iCloud Drive</small></span></button><button class="backup-action restore" data-backup-import><span class="backup-action-icon">↑</span><span><strong>Restaurer une sauvegarde</strong><small>Remettre une copie Réperto’Poche sur cet iPhone</small></span></button></section><p class="helper backup-note">Conseil : fais une sauvegarde avant une grande mise à jour et conserve-la dans iCloud Drive.</p>${nav()}`;
+  bind();
 }
 
 function meds(query=''){
@@ -203,7 +236,7 @@ function addMenu(){
   const modal=document.createElement('div');modal.className='modal menu-modal';modal.innerHTML=`<section class="sheet quick-sheet"><div class="sheet-top"><h2>Ajouter</h2><button type="button" class="close" data-close>×</button></div><button class="add-choice" data-choice="event"><span class="plan-badge">□</span><span><strong>Créneau de planning</strong><small>Travail, congé ou rendez-vous</small></span></button><button class="add-choice" data-choice="est"><span class="est-badge">⌂</span><span><strong>Établissement</strong><small>Avec son annuaire téléphonique</small></span></button><button class="add-choice" data-choice="med"><span class="med-badge">●</span><span><strong>Fiche médicament</strong><small>Indication, vigilance et posologie</small></span></button></section>`;document.body.append(modal);modal.querySelector('[data-close]').onclick=()=>modal.remove();modal.querySelectorAll('[data-choice]').forEach(button=>button.onclick=()=>{const choice=button.dataset.choice;modal.remove();if(choice==='event')eventForm();if(choice==='est')establishmentForm();if(choice==='med')medForm();});
 }
 function bind(){
-  document.querySelectorAll('[data-go]').forEach(button=>button.onclick=()=>{const target=button.dataset.go;if(target==='home')home();else if(target==='meds')meds();else if(target==='establishments')establishments();else if(target==='planning')planning();else if(target==='search')searchPage();else if(['languages','protocols','notes'].includes(target))resourcePage(target);});
+  document.querySelectorAll('[data-go]').forEach(button=>button.onclick=()=>{const target=button.dataset.go;if(target==='home')home();else if(target==='meds')meds();else if(target==='establishments')establishments();else if(target==='planning')planning();else if(target==='search')searchPage();else if(target==='profile')profile();else if(['languages','protocols','notes'].includes(target))resourcePage(target);});
   document.querySelectorAll('[data-med]').forEach(button=>button.onclick=()=>medDetail(button.dataset.med));
   document.querySelectorAll('[data-est]').forEach(button=>button.onclick=()=>establishmentDetail(button.dataset.est));
   document.querySelectorAll('[data-add-med]').forEach(button=>button.onclick=()=>medForm());
@@ -221,6 +254,8 @@ function bind(){
   document.querySelectorAll('[data-today]').forEach(button=>button.onclick=()=>{const today=new Date().toISOString().slice(0,10);planning(today.slice(0,7),today);});
   document.querySelectorAll('[data-month]').forEach(button=>button.onclick=()=>planning(button.dataset.month));
   document.querySelectorAll('[data-add-menu]').forEach(button=>button.onclick=addMenu);
+  document.querySelectorAll('[data-backup-export]').forEach(button=>button.onclick=downloadBackup);
+  document.querySelectorAll('[data-backup-import]').forEach(button=>button.onclick=chooseBackup);
   bindHold();
 }
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
