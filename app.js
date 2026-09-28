@@ -258,9 +258,13 @@ function bind(){
   document.querySelectorAll('[data-backup-import]').forEach(button=>button.onclick=chooseBackup);
   bindHold();
 }
+// Empêche le menu iPhone Copier/Rechercher sur les fiches ; les champs restent éditables.
+document.addEventListener('contextmenu',event=>{
+  if(!event.target.closest('input, textarea, select, [contenteditable="true"]')) event.preventDefault();
+});
 if('serviceWorker' in navigator){
   let refreshing=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;window.location.reload();}});
-  navigator.serviceWorker.register('sw.js?v=12',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=13',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
 }
 home();
