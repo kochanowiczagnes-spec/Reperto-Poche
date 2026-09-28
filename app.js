@@ -85,6 +85,7 @@ const nav = (active='home') => `<nav class="nav" aria-label="Navigation principa
 </nav>`;
 const topbar = () => `<header class="top">${logo()}<button class="avatar" data-go="profile" aria-label="Profil">AK</button></header>`;
 const category = (cls, icon, title, meta, target) => `<button class="folder ${cls}" data-go="${target}"><span class="icon">${icon}</span><h2>${title}</h2><p>${meta}</p></button>`;
+const sortByName = (a,b) => String(a.name || a.title || '').localeCompare(String(b.name || b.title || ''),'fr',{sensitivity:'base',numeric:true});
 const sortedContacts = establishment => [...(establishment.contacts || [])].sort((a,b) => a.department.localeCompare(b.department,'fr'));
 
 function home(){
@@ -101,7 +102,7 @@ function profile(){
 }
 
 function meds(query=''){
-  const list = getMeds().filter(m => `${m.name} ${m.class}`.toLocaleLowerCase('fr').includes(query.toLocaleLowerCase('fr')));
+  const list = [...getMeds()].filter(m => `${m.name} ${m.class}`.toLocaleLowerCase('fr').includes(query.toLocaleLowerCase('fr'))).sort(sortByName);
   app.innerHTML = `${topbar()}${sectionTitle('Médicaments',`${getMeds().length} fiches`,'home')}<label class="search"><span>⌕</span><input id="med-search" value="${escape(query)}" placeholder="Rechercher un médicament" autocomplete="off" /></label><button class="filter">Toutes les classes</button><section class="list">${list.length ? list.map(m => `<button class="item" data-med="${m.id}" data-hold="med|${m.id}" aria-label="${escape(m.name)}. Maintenir pour modifier ou supprimer."><span class="item-icon med-icon">●</span><span class="item-main"><h2>${escape(m.name)}</h2><p>${escape(m.class)}</p></span>${m.attachment?'<span class="paperclip">⌇ 1 fichier</span>':''}<span class="chev">›</span></button>`).join('') : empty('Aucun médicament trouvé.')}</section><button class="fab" data-add-med aria-label="Ajouter une fiche médicament">+</button>${nav()}`;
   $('#med-search').addEventListener('input', e => meds(e.target.value)); bind();
 }
@@ -167,17 +168,31 @@ function languageDetail(id){
   bind();
 }
 
-function searchPage(){
-  app.innerHTML = `${topbar()}${sectionTitle('Recherche','Médicaments, établissements, planning','home')}<label class="search"><span>⌕</span><input id="search-page-input" placeholder="Rechercher dans Réperto’Poche" autocomplete="off" autofocus /></label><p class="helper">Retrouve un médicament, un établissement, un service ou un créneau.</p>${nav('search')}`;
-  $('#search-page-input').addEventListener('input', event => { if(event.target.value.trim()) globalSearch(event.target.value); }); bind();
+function searchPage(initialQuery=''){
+  app.innerHTML = `${topbar()}${sectionTitle('Recherche','Dans tous tes dossiers','home')}<label class="search"><span>⌕</span><input id="search-page-input" value="${escape(initialQuery)}" placeholder="Rechercher dans Réperto’Poche" autocomplete="off" autofocus /></label><p class="helper">Médicaments, établissements, planning, langues, protocoles, notes, chirurgie et pédiatrie.</p><section id="search-results" class="search-results"></section>${nav('search')}`;
+  const input=$('#search-page-input');
+  input.addEventListener('input', event=>renderSearchResults(event.target.value));
+  if(initialQuery.trim()) renderSearchResults(initialQuery);
+  if(initialQuery){input.focus();input.setSelectionRange(initialQuery.length,initialQuery.length);}
+  bind();
 }
-function globalSearch(query){
-  const term = query.trim().toLocaleLowerCase('fr'); if(!term) return searchPage();
-  const meds = getMeds().filter(m => `${m.name} ${m.class} ${m.indication}`.toLocaleLowerCase('fr').includes(term));
-  const establishmentsFound = getEstablishments().filter(p => `${p.name} ${p.city} ${p.service} ${(p.contacts||[]).map(c=>`${c.department} ${c.phone}`).join(' ')}`.toLocaleLowerCase('fr').includes(term));
-  const events = getPlanning().filter(e => `${e.title} ${e.place}`.toLocaleLowerCase('fr').includes(term));
-  app.innerHTML = `${topbar()}${sectionTitle('Résultats',`pour « ${escape(query)} »`,'home')}<section class="search-results">${meds.length?`<h2>Médicaments</h2><section class="list">${meds.map(m=>`<button class="item" data-med="${m.id}"><span class="item-icon med-icon">●</span><span class="item-main"><h2>${escape(m.name)}</h2><p>${escape(m.class)}</p></span><span class="chev">›</span></button>`).join('')}</section>`:''}${establishmentsFound.length?`<h2>Établissements</h2><section class="list">${establishmentsFound.map(p=>`<button class="item" data-est="${p.id}"><span class="item-icon est-icon">⌂</span><span class="item-main"><h2>${escape(p.name)}</h2><p>${escape(p.city)}</p></span><span class="chev">›</span></button>`).join('')}</section>`:''}${events.length?`<h2>Planning</h2><section class="list">${events.map(eventRow).join('')}</section>`:''}${!meds.length&&!establishmentsFound.length&&!events.length?empty('Aucun résultat pour le moment.'):''}</section>${nav('search')}`; bind();
+function resourceSearchSection(title,items){
+  return items.length?`<h2>${title}</h2><section class="list">${items.map(item=>`<article class="detail-card"><h2>${escape(item.title)}</h2><p>${escape(item.text || 'À compléter.')}</p></article>`).join('')}</section>`:'';
 }
+function renderSearchResults(query){
+  const target=$('#search-results');if(!target)return;
+  const term=query.trim().toLocaleLowerCase('fr');
+  if(!term){target.innerHTML=empty('Saisis un mot pour rechercher dans tes repères.');return;}
+  const contains=value=>String(value||'').toLocaleLowerCase('fr').includes(term);
+  const meds=[...getMeds()].filter(m=>contains(`${m.name} ${m.class} ${m.indication} ${m.mechanism} ${m.contra} ${m.dose}`)).sort(sortByName);
+  const establishmentsFound=getEstablishments().filter(p=>contains(`${p.name} ${p.city} ${p.service} ${p.note} ${(p.contacts||[]).map(c=>`${c.department} ${c.phone} ${c.note}`).join(' ')}`));
+  const events=getPlanning().filter(e=>contains(`${e.title} ${e.place} ${e.note}`));
+  const resources=[['Langues étrangères',get('rp-languages',languageDefaults)],['Protocoles',get('rp-protocols',protocolDefaults)],['Notes rapides',get('rp-notes',noteDefaults)],['Chirurgie',get('rp-surgery',surgeryDefaults)],['Pédiatrie',get('rp-pediatrics',pediatricsDefaults)]].map(([title,items])=>[title,items.filter(item=>contains(`${item.title} ${item.text} ${(item.entries||[]).map(entry=>`${entry.title} ${entry.text}`).join(' ')}`))]);
+  const resourceMarkup=resources.map(([title,items])=>resourceSearchSection(title,items)).join('');
+  target.innerHTML=`<p class="helper">Résultats pour « ${escape(query)} »</p>${meds.length?`<h2>Médicaments</h2><section class="list">${meds.map(m=>`<button class="item" data-med="${m.id}"><span class="item-icon med-icon">●</span><span class="item-main"><h2>${escape(m.name)}</h2><p>${escape(m.class)}</p></span><span class="chev">›</span></button>`).join('')}</section>`:''}${establishmentsFound.length?`<h2>Établissements</h2><section class="list">${establishmentsFound.map(p=>`<button class="item" data-est="${p.id}"><span class="item-icon est-icon">⌂</span><span class="item-main"><h2>${escape(p.name)}</h2><p>${escape(p.city)}</p></span><span class="chev">›</span></button>`).join('')}</section>`:''}${events.length?`<h2>Planning</h2><section class="list">${events.map(eventRow).join('')}</section>`:''}${resourceMarkup||(!meds.length&&!establishmentsFound.length&&!events.length?empty('Aucun résultat pour le moment.'): '')}`;
+  bind();
+}
+function globalSearch(query){ searchPage(query); }
 
 function sectionTitle(title, subtitle, back){ return `<div class="section-head"><button class="back" data-go="${back}" aria-label="Retour">‹</button><div><h1>${title}</h1><p>${subtitle}</p></div></div>`; }
 function infoCard(title,text){ return `<article class="detail-card"><h2>${title}</h2><p>${escape(text || 'À compléter.')}</p></article>`; }
@@ -293,6 +308,6 @@ document.addEventListener('contextmenu',event=>{
 if('serviceWorker' in navigator){
   let refreshing=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;window.location.reload();}});
-  navigator.serviceWorker.register('sw.js?v=16',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=19',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
 }
 home();
