@@ -30,6 +30,9 @@ const protocolDefaults = [
   {id:'antibioprophylaxie',title:'Antibioprophylaxie',text:'Ajoute ici tes recommandations et repères.'}
 ];
 const noteDefaults = [];
+// Rubriques d’accueil personnelles : elles restent vierges pour que chaque repère suive les protocoles locaux.
+const surgeryDefaults = [];
+const pediatricsDefaults = [];
 const get = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key) || 'null') || fallback; } catch { return fallback; } };
 const set = (key, value) => localStorage.setItem(key, JSON.stringify(value));
 const getMeds = () => get('rp-meds', medDefaults);
@@ -44,7 +47,9 @@ const backupCollections = {
   'rp-planning': planningDefaults,
   'rp-languages': languageDefaults,
   'rp-protocols': protocolDefaults,
-  'rp-notes': noteDefaults
+  'rp-notes': noteDefaults,
+  'rp-surgery': surgeryDefaults,
+  'rp-pediatrics': pediatricsDefaults
 };
 const backupCollectionKeys = Object.keys(backupCollections);
 function makeBackup(){
@@ -83,7 +88,7 @@ function home(){
   const est = getEstablishments(); const events = getPlanning();
   app.innerHTML = `${topbar()}<p class="eyebrow">Bonjour Agnès</p><h1 class="headline">Tout retrouver,<br>même dans l’urgence.</h1><p class="sub">Ton carnet professionnel, toujours dans la poche.</p>
   <label class="search"><span>⌕</span><input id="global-search" placeholder="Rechercher dans Réperto’Poche" autocomplete="off" /></label>
-  <section class="grid">${category('est','⌂','Établissements',`${est.length} lieux`,'establishments')}${category('med','●','Médicaments',`${getMeds().length} fiches`,'meds')}${category('lang','文','Langues',`${get('rp-languages', languageDefaults).length} dossiers`,'languages')}${category('docs','▤','Protocoles',`${get('rp-protocols', protocolDefaults).length} document${get('rp-protocols', protocolDefaults).length>1?'s':''}`,'protocols')}${category('notes','✎','Notes rapides',`${get('rp-notes', noteDefaults).length} note${get('rp-notes', noteDefaults).length>1?'s':''}`,'notes')}${category('plan','□','Planning',events.length ? `${events.length} créneau${events.length>1?'x':''}` : 'À organiser','planning')}</section>${nav('home')}`;
+  <section class="grid">${category('est','⌂','Établissements',`${est.length} lieux`,'establishments')}${category('med','●','Médicaments',`${getMeds().length} fiches`,'meds')}${category('surgery','✚','Chirurgie',`${get('rp-surgery', surgeryDefaults).length} repère${get('rp-surgery', surgeryDefaults).length>1?'s':''}`,'surgery')}${category('pediatrics','♧','Pédiatrie',`${get('rp-pediatrics', pediatricsDefaults).length} repère${get('rp-pediatrics', pediatricsDefaults).length>1?'s':''}`,'pediatrics')}${category('lang','文','Langues',`${get('rp-languages', languageDefaults).length} dossiers`,'languages')}${category('docs','▤','Protocoles',`${get('rp-protocols', protocolDefaults).length} document${get('rp-protocols', protocolDefaults).length>1?'s':''}`,'protocols')}${category('notes','✎','Notes rapides',`${get('rp-notes', noteDefaults).length} note${get('rp-notes', noteDefaults).length>1?'s':''}`,'notes')}${category('plan','□','Planning',events.length ? `${events.length} créneau${events.length>1?'x':''}` : 'À organiser','planning')}</section>${nav('home')}`;
   $('#global-search').addEventListener('input', e => globalSearch(e.target.value)); bind();
 }
 
@@ -137,7 +142,9 @@ function eventRow(event,activeDate=''){const d=new Date(`${(activeDate||eventSta
 const resourceConfig = {
   languages:{title:'Langues étrangères',singular:'dossier de langue',subtitle:'Phrases et repères par langue',key:'rp-languages',fallback:languageDefaults,empty:'Aucun dossier de langue pour le moment.'},
   protocols:{title:'Protocoles',singular:'protocole',subtitle:'Recommandations et documents utiles',key:'rp-protocols',fallback:protocolDefaults,empty:'Aucun protocole pour le moment.'},
-  notes:{title:'Notes rapides',singular:'note',subtitle:'Tes repères à retrouver vite',key:'rp-notes',fallback:noteDefaults,empty:'Aucune note pour le moment.'}
+  notes:{title:'Notes rapides',singular:'note',subtitle:'Tes repères à retrouver vite',key:'rp-notes',fallback:noteDefaults,empty:'Aucune note pour le moment.'},
+  surgery:{title:'Chirurgie',singular:'repère de chirurgie',subtitle:'Tes fiches, documents et repères de bloc',key:'rp-surgery',fallback:surgeryDefaults,empty:'Aucun repère de chirurgie pour le moment.'},
+  pediatrics:{title:'Pédiatrie',singular:'repère de pédiatrie',subtitle:'Tes fiches, documents et repères pédiatriques',key:'rp-pediatrics',fallback:pediatricsDefaults,empty:'Aucun repère de pédiatrie pour le moment.'}
 };
 function resourcePage(kind){
   const config = resourceConfig[kind];
@@ -225,7 +232,7 @@ function openSheet(title, body, onSave){
 function resourceForm(kind, existing){
   const config=resourceConfig[kind]; if(!config)return;
   const item=existing||{title:'',text:'',attachment:null}; const fileField=attachmentInput(item.attachment);
-  openSheet(`${existing?'Modifier':'Nouveau'} ${config.singular}`,`<div class="field"><label>Titre</label><input required name="title" value="${escape(item.title)}" placeholder="Ex. ${kind==='languages'?'Anglais':kind==='protocols'?'Antibioprophylaxie':'Repère important'}"></div><div class="field"><label>Contenu</label><textarea name="text" placeholder="Écris ici ton repère…">${escape(item.text)}</textarea></div>${fileField}`,async values=>{try{const file=values.attachment;delete values.attachment;const attachment=file&&file.name?await fileToAttachment(file):(item.attachment||null);let list=get(config.key,config.fallback);if(existing)list=list.map(entry=>entry.id===existing.id?{...entry,...values,attachment}:entry);else list.push({id:uid(kind.slice(0,-1)),...values,attachment});set(config.key,list);resourcePage(kind);toast(attachment?'Entrée et fichier enregistrés':'Entrée enregistrée sur cet iPhone');}catch(error){toast(error.message);throw error;}});
+  openSheet(`${existing?'Modifier':'Nouveau'} ${config.singular}`,`<div class="field"><label>Titre</label><input required name="title" value="${escape(item.title)}" placeholder="Ex. ${kind==='languages'?'Anglais':kind==='protocols'?'Antibioprophylaxie':kind==='surgery'?'Chirurgie orthopédique':kind==='pediatrics'?'Accueil de l’enfant':'Repère important'}"></div><div class="field"><label>Contenu</label><textarea name="text" placeholder="Écris ici ton repère…">${escape(item.text)}</textarea></div>${fileField}`,async values=>{try{const file=values.attachment;delete values.attachment;const attachment=file&&file.name?await fileToAttachment(file):(item.attachment||null);let list=get(config.key,config.fallback);if(existing)list=list.map(entry=>entry.id===existing.id?{...entry,...values,attachment}:entry);else list.push({id:uid(kind.slice(0,-1)),...values,attachment});set(config.key,list);resourcePage(kind);toast(attachment?'Entrée et fichier enregistrés':'Entrée enregistrée sur cet iPhone');}catch(error){toast(error.message);throw error;}});
 }
 function languageNoteForm(languageId, existing){
   const language = get('rp-languages', languageDefaults).find(item=>item.id===languageId);
@@ -253,7 +260,7 @@ function addMenu(){
   const modal=document.createElement('div');modal.className='modal menu-modal';modal.innerHTML=`<section class="sheet quick-sheet"><div class="sheet-top"><h2>Ajouter</h2><button type="button" class="close" data-close>×</button></div><button class="add-choice" data-choice="event"><span class="plan-badge">□</span><span><strong>Créneau de planning</strong><small>Travail, congé ou rendez-vous</small></span></button><button class="add-choice" data-choice="est"><span class="est-badge">⌂</span><span><strong>Établissement</strong><small>Avec son annuaire téléphonique</small></span></button><button class="add-choice" data-choice="med"><span class="med-badge">●</span><span><strong>Fiche médicament</strong><small>Indication, vigilance et posologie</small></span></button></section>`;document.body.append(modal);modal.querySelector('[data-close]').onclick=()=>modal.remove();modal.querySelectorAll('[data-choice]').forEach(button=>button.onclick=()=>{const choice=button.dataset.choice;modal.remove();if(choice==='event')eventForm();if(choice==='est')establishmentForm();if(choice==='med')medForm();});
 }
 function bind(){
-  document.querySelectorAll('[data-go]').forEach(button=>button.onclick=()=>{const target=button.dataset.go;if(target==='home')home();else if(target==='meds')meds();else if(target==='establishments')establishments();else if(target==='planning')planning();else if(target==='search')searchPage();else if(target==='profile')profile();else if(['languages','protocols','notes'].includes(target))resourcePage(target);});
+  document.querySelectorAll('[data-go]').forEach(button=>button.onclick=()=>{const target=button.dataset.go;if(target==='home')home();else if(target==='meds')meds();else if(target==='establishments')establishments();else if(target==='planning')planning();else if(target==='search')searchPage();else if(target==='profile')profile();else if(['languages','protocols','notes','surgery','pediatrics'].includes(target))resourcePage(target);});
   document.querySelectorAll('[data-med]').forEach(button=>button.onclick=()=>medDetail(button.dataset.med));
   document.querySelectorAll('[data-est]').forEach(button=>button.onclick=()=>establishmentDetail(button.dataset.est));
   document.querySelectorAll('[data-add-med]').forEach(button=>button.onclick=()=>medForm());
