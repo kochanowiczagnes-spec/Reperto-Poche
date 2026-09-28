@@ -258,5 +258,9 @@ function bind(){
   document.querySelectorAll('[data-backup-import]').forEach(button=>button.onclick=chooseBackup);
   bindHold();
 }
-if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+if('serviceWorker' in navigator){
+  let refreshing=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;window.location.reload();}});
+  navigator.serviceWorker.register('sw.js?v=12',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
+}
 home();
