@@ -131,7 +131,7 @@ function establishments(query=''){
 function establishmentDetail(id){
   const place = getEstablishments().find(item => item.id === id); if(!place) return establishments();
   const contacts = sortedContacts(place);
-  app.innerHTML = `${topbar()}${sectionTitle(escape(place.name),escape(place.city || 'Établissement'),'establishments')}<div class="place-summary holdable" tabindex="0" role="button" data-hold="est|${place.id}"><span class="item-icon est-icon">⌂</span><div><strong>${escape(place.service || 'Service à renseigner')}</strong><p>${escape(place.note || 'Ajoute ici tes repères pratiques.')}</p></div></div>${attachmentLink(place.attachment)}<p class="helper">Maintiens un établissement ou un contact pour le modifier ou le supprimer.</p><div class="subsection-head"><div><h2>Annuaire téléphonique</h2><p>${contacts.length} contact${contacts.length>1?'s':''} · ordre alphabétique</p></div><button class="small-add" data-add-contact="${place.id}" aria-label="Ajouter un contact">+</button></div><section class="list contacts">${contacts.length ? contacts.map(c => `<article class="contact-card holdable" tabindex="0" role="button" data-hold="contact|${place.id}|${c.id}"><span class="contact-letter">${escape(c.department.slice(0,1).toUpperCase())}</span><div class="item-main"><h2>${escape(c.department)}</h2><p>${escape(c.phone || 'À renseigner')}${c.note ? ` · ${escape(c.note)}` : ''}</p></div></article>${attachmentLink(c.attachment)}`).join('') : empty('Aucun contact pour le moment.')}</section>${nav()}`; bind();
+  app.innerHTML = `${topbar()}${sectionTitle(escape(place.name),escape(place.city || 'Établissement'),'establishments')}<div class="place-summary holdable" tabindex="0" role="button" data-hold="est|${place.id}"><span class="item-icon est-icon">⌂</span><div><strong>${escape(place.service || 'Service à renseigner')}</strong><p class="multiline">${escape(place.note || 'Ajoute ici tes repères pratiques.')}</p></div></div>${attachmentLink(place.attachment)}<p class="helper">Maintiens un établissement ou un contact pour le modifier ou le supprimer.</p><div class="subsection-head"><div><h2>Annuaire téléphonique</h2><p>${contacts.length} contact${contacts.length>1?'s':''} · ordre alphabétique</p></div><button class="small-add" data-add-contact="${place.id}" aria-label="Ajouter un contact">+</button></div><section class="list contacts">${contacts.length ? contacts.map(c => `<article class="contact-card holdable" tabindex="0" role="button" data-hold="contact|${place.id}|${c.id}"><span class="contact-letter">${escape(c.department.slice(0,1).toUpperCase())}</span><div class="item-main"><h2>${escape(c.department)}</h2><p>${escape(c.phone || 'À renseigner')}${c.note ? ` · ${escape(c.note)}` : ''}</p></div></article>${attachmentLink(c.attachment)}`).join('') : empty('Aucun contact pour le moment.')}</section>${nav()}`; bind();
 }
 
 function eventStart(event){ return event.startDate || event.date || ''; }
@@ -168,8 +168,8 @@ function resourcePage(kind){
   if(!config) return home();
   const items = get(config.key, config.fallback);
   const cards = items.length ? items.map(item => kind==='languages'
-    ? `<article class="detail-card resource-folder">${attachmentLink(item.attachment)}<button class="holdable" data-language="${item.id}" data-hold="resource|${kind}|${item.id}" aria-label="${escape(item.title)}. Touchez pour ouvrir, maintenez pour modifier ou supprimer."><h2>${escape(item.title)}</h2><p>${escape(item.text || 'À compléter.')}</p><span class="chev">›</span></button></article>`
-    : `<article class="detail-card holdable" tabindex="0" role="button" data-hold="resource|${kind}|${item.id}"><h2>${escape(item.title)}</h2><p>${escape(item.text || 'À compléter.')}</p>${item.attachment?`<p><strong>⌇ Fichier joint : ${escape(item.attachment.name)}</strong></p>`:''}${attachmentLink(item.attachment)}</article>`).join('') : empty(config.empty);
+    ? `<article class="detail-card resource-folder">${attachmentLink(item.attachment)}<button class="holdable" data-language="${item.id}" data-hold="resource|${kind}|${item.id}" aria-label="${escape(item.title)}. Touchez pour ouvrir, maintenez pour modifier ou supprimer."><h2>${escape(item.title)}</h2><p class="multiline">${escape(item.text || 'À compléter.')}</p><span class="chev">›</span></button></article>`
+    : `<article class="detail-card holdable" tabindex="0" role="button" data-hold="resource|${kind}|${item.id}"><h2>${escape(item.title)}</h2><p class="multiline">${escape(item.text || 'À compléter.')}</p>${item.attachment?`<p><strong>⌇ Fichier joint : ${escape(item.attachment.name)}</strong></p>`:''}${attachmentLink(item.attachment)}</article>`).join('') : empty(config.empty);
   app.innerHTML = `${topbar()}${sectionTitle(config.title,config.subtitle,'home')}<p class="helper">${kind==='languages'?'Touche un dossier pour l’ouvrir. Maintiens-le pour le modifier ou le supprimer.':'Maintiens une entrée pour la modifier ou la supprimer.'}</p><section class="list">${cards}</section><button class="fab" data-add-resource="${kind}" aria-label="Ajouter ${config.singular}">+</button>${nav()}`;
   bind();
 }
@@ -177,7 +177,7 @@ function languageDetail(id){
   const language = get('rp-languages', languageDefaults).find(item=>item.id===id);
   if(!language) return resourcePage('languages');
   const entries = language.entries || [];
-  app.innerHTML = `${topbar()}${sectionTitle(escape(language.title),'Phrases et notes','languages')}<p class="helper">Ajoute ici les phrases utiles pour ce dossier. Maintiens une note pour la modifier ou la supprimer.</p>${language.text ? `<article class="detail-card"><p>${escape(language.text)}</p></article>` : ''}${attachmentLink(language.attachment)}<section class="list">${entries.length ? entries.map(item=>`<article class="detail-card holdable" tabindex="0" role="button" data-hold="language-note|${language.id}|${item.id}"><h2>${escape(item.title)}</h2><p>${escape(item.text || 'À compléter.')}</p></article>${attachmentLink(item.attachment)}`).join('') : empty('Aucune note pour le moment.')}</section><button class="fab" data-add-language-note="${language.id}" aria-label="Ajouter une note dans ${escape(language.title)}">+</button>${nav()}`;
+  app.innerHTML = `${topbar()}${sectionTitle(escape(language.title),'Phrases et notes','languages')}<p class="helper">Ajoute ici les phrases utiles pour ce dossier. Maintiens une note pour la modifier ou la supprimer.</p>${language.text ? `<article class="detail-card"><p class="multiline">${escape(language.text)}</p></article>` : ''}${attachmentLink(language.attachment)}<section class="list">${entries.length ? entries.map(item=>`<article class="detail-card holdable" tabindex="0" role="button" data-hold="language-note|${language.id}|${item.id}"><h2>${escape(item.title)}</h2><p class="multiline">${escape(item.text || 'À compléter.')}</p></article>${attachmentLink(item.attachment)}`).join('') : empty('Aucune note pour le moment.')}</section><button class="fab" data-add-language-note="${language.id}" aria-label="Ajouter une note dans ${escape(language.title)}">+</button>${nav()}`;
   bind();
 }
 
@@ -190,7 +190,7 @@ function searchPage(initialQuery=''){
   bind();
 }
 function resourceSearchSection(title,items){
-  return items.length?`<h2>${title}</h2><section class="list">${items.map(item=>`<article class="detail-card"><h2>${escape(item.title)}</h2><p>${escape(item.text || 'À compléter.')}</p></article>`).join('')}</section>`:'';
+  return items.length?`<h2>${title}</h2><section class="list">${items.map(item=>`<article class="detail-card"><h2>${escape(item.title)}</h2><p class="multiline">${escape(item.text || 'À compléter.')}</p></article>`).join('')}</section>`:'';
 }
 function renderSearchResults(query){
   const target=$('#search-results');if(!target)return;
@@ -222,7 +222,7 @@ function globalSearch(query){
 }
 
 function sectionTitle(title, subtitle, back){ return `<div class="section-head"><button class="back" data-go="${back}" aria-label="Retour">‹</button><div><h1>${title}</h1><p>${subtitle}</p></div></div>`; }
-function infoCard(title,text){ return `<article class="detail-card"><h2>${title}</h2><p>${escape(text || 'À compléter.')}</p></article>`; }
+function infoCard(title,text){ return `<article class="detail-card"><h2>${title}</h2><p class="multiline">${escape(text || 'À compléter.')}</p></article>`; }
 function empty(text){ return `<p class="empty">${text}</p>`; }
 function toast(message){ const el=$('#toast'); el.textContent=message; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),2600); }
 const MAX_DOCUMENT_BYTES=2*1024*1024,MAX_PHOTO_SOURCE_BYTES=20*1024*1024,MAX_PHOTO_BYTES=500*1024,MAX_PHOTO_SIDE=1600;
