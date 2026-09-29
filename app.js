@@ -157,17 +157,28 @@ function profile(){
 }
 
 function medMatches(med,query){ return searchText(`${med.name} ${med.class} ${med.indication} ${med.mechanism} ${med.contra} ${med.dose}`).includes(searchText(query)); }
-function medListMarkup(query=''){
-  const list=[...getMeds()].filter(med=>medMatches(med,query)).sort(sortByName);
-  return list.length ? list.map(m => `<button class="item" data-med="${m.id}" data-hold="med|${m.id}" aria-label="${escape(m.name)}. Maintenir pour modifier ou supprimer."><span class="item-icon med-icon">●</span><span class="item-main"><h2>${escape(m.name)}</h2><p>${escape(m.class)}</p></span>${m.attachment?'<span class="paperclip">⌇ 1 fichier</span>':''}<span class="chev">›</span></button>`).join('') : empty('Aucun médicament trouvé.');
+function medClassName(med){ return String(med.class||'').trim() || 'Sans classe'; }
+function medClasses(){
+  const counts=new Map();
+  getMeds().forEach(med=>{const name=medClassName(med);counts.set(name,(counts.get(name)||0)+1);});
+  return [...counts].sort((a,b)=>searchText(a[0]).localeCompare(searchText(b[0]),'fr',{numeric:true}));
 }
-function refreshMedList(query=''){
+function medItemMarkup(med){ return `<button class="item" data-med="${med.id}" data-hold="med|${med.id}" aria-label="${escape(med.name)}. Maintenir pour modifier ou supprimer."><span class="item-icon med-icon">●</span><span class="item-main"><h2>${escape(med.name)}</h2><p>${escape(medClassName(med))}</p></span>${med.attachment?'<span class="paperclip">⌇ 1 fichier</span>':''}<span class="chev">›</span></button>`; }
+function medListMarkup(query='',activeClass=''){
+  const list=[...getMeds()].filter(med=>medMatches(med,query)&&(!activeClass||medClassName(med)===activeClass)).sort(sortByName);
+  if(!list.length)return empty(activeClass?`Aucun médicament dans la classe « ${activeClass} ».`:'Aucun médicament trouvé.');
+  if(activeClass)return list.map(medItemMarkup).join('');
+  return medClasses().map(([className])=>{const medicines=list.filter(med=>medClassName(med)===className);if(!medicines.length)return '';return `<div class="med-class-group"><h2>${escape(className)}</h2><p>${countLabel(medicines.length,'fiche')}</p><section class="list">${medicines.map(medItemMarkup).join('')}</section></div>`;}).join('');
+}
+function refreshMedList(query='',activeClass=''){
   const list=$('#med-list');if(!list)return;
-  list.innerHTML=medListMarkup(query);bind();
+  list.innerHTML=medListMarkup(query,activeClass);bind();
 }
-function meds(){
-  app.innerHTML = `${topbar()}${sectionTitle('Médicaments',`${getMeds().length} fiches`,'home')}<label class="search"><span>⌕</span><input id="med-search" placeholder="Rechercher un médicament" autocomplete="off" /></label><button class="filter">Toutes les classes</button><section id="med-list" class="list">${medListMarkup()}</section><button class="fab" data-add-med aria-label="Ajouter une fiche médicament">+</button>${nav()}`;
-  $('#med-search').addEventListener('input', event=>refreshMedList(event.target.value)); bind();
+function meds(activeClass=''){
+  const classes=medClasses();
+  const filters=`<div class="med-class-filters" aria-label="Ranger les médicaments par classe"><button class="med-class-filter ${!activeClass?'selected':''}" data-med-class="">Toutes <span>${getMeds().length}</span></button>${classes.map(([className,count])=>`<button class="med-class-filter ${activeClass===className?'selected':''}" data-med-class="${escape(className)}">${escape(className)} <span>${count}</span></button>`).join('')}</div>`;
+  app.innerHTML = `${topbar()}${sectionTitle('Médicaments',`${getMeds().length} fiches · ${classes.length} classe${classes.length>1?'s':''}`,'home')}<label class="search"><span>⌕</span><input id="med-search" placeholder="Rechercher un médicament" autocomplete="off" /></label><p class="helper med-class-help">Tes fiches sont rangées automatiquement par la classe indiquée.</p>${filters}<section id="med-list" class="med-class-list">${medListMarkup('',activeClass)}</section><button class="fab" data-add-med aria-label="Ajouter une fiche médicament">+</button>${nav()}`;
+  $('#med-search').addEventListener('input', event=>refreshMedList(event.target.value,activeClass)); bind();
 }
 function medDetail(id){
   const med = getMeds().find(item => item.id === id); if(!med) return meds();
@@ -471,6 +482,7 @@ function addMenu(){
 function bind(){
   document.querySelectorAll('[data-go]').forEach(button=>button.onclick=()=>{const target=button.dataset.go;if(target==='home')home();else if(target==='meds')meds();else if(target==='establishments')establishments();else if(target==='planning')planning();else if(target==='search')searchPage();else if(target==='profile')profile();else if(target==='surgery')surgery();else if(target==='surgery-specialty')surgery();else if(target==='anesthesia')anesthesia();else if(target==='anesthesia-terrain')anesthesia();else if(['languages','protocols','notes','pediatrics','emergencies'].includes(target))resourcePage(target);});
   document.querySelectorAll('[data-med]').forEach(button=>button.onclick=()=>medDetail(button.dataset.med));
+  document.querySelectorAll('[data-med-class]').forEach(button=>button.onclick=()=>meds(button.dataset.medClass));
   document.querySelectorAll('[data-est]').forEach(button=>button.onclick=()=>establishmentDetail(button.dataset.est));
   document.querySelectorAll('[data-add-med]').forEach(button=>button.onclick=()=>medForm());
   document.querySelectorAll('[data-edit-med]').forEach(button=>button.onclick=()=>medForm(getMeds().find(item=>item.id===button.dataset.editMed)));
@@ -514,7 +526,7 @@ document.addEventListener('contextmenu',event=>{
 if('serviceWorker' in navigator){
   let refreshing=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;window.location.reload();}});
-  navigator.serviceWorker.register('sw.js?v=31',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=32',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
 }
 async function startApp(){let moved=0;try{moved=await migrateLegacyAttachments();await cleanupOrphanAttachments();}catch(error){console.warn('Migration des fichiers',error);}home();if(moved)toast(`${moved} fichier${moved>1?'s':''} déplacé${moved>1?'s':''} vers le stockage étendu`);}
 startApp();

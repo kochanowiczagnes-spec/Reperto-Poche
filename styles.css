@@ -37,3 +37,7 @@ input,textarea,select{-webkit-user-select:text;user-select:text;-webkit-touch-ca
 
 /* v29 — aperçu des contenus dans les listes de dossiers. */
 .folder-preview{color:var(--muted)!important;font-size:13px!important;font-weight:700;margin:0 0 5px!important}.folder-intro{font-size:13px!important;line-height:1.35!important;margin:0!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+
+/* v32 — Médicaments : classement automatique par classe renseignée. */
+.med-class-help{margin:-4px 0 12px}.med-class-filters{display:flex;gap:8px;overflow-x:auto;padding:2px 1px 13px;margin:0 -1px;-webkit-overflow-scrolling:touch}.med-class-filter{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;border:1px solid #f0d2d9;background:#fff;color:#94344a;border-radius:999px;padding:8px 11px;font-size:13px;font-weight:750}.med-class-filter span{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;border-radius:99px;background:#fce9ee;color:#a83750;font-size:11px}.med-class-filter.selected{background:var(--rasp);border-color:var(--rasp);color:#fff}.med-class-filter.selected span{background:#ffffff33;color:#fff}.med-class-list{display:grid;gap:17px}.med-class-group{display:grid;gap:8px}.med-class-group>h2{font-size:17px;margin:0;letter-spacing:-.2px}.med-class-group>p{margin:-5px 0 0;color:var(--muted);font-size:12px;font-weight:650}.med-class-group .list{margin:0}
