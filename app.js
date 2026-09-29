@@ -93,7 +93,7 @@ const sortByName = (a,b) => searchText(a.name || a.title).localeCompare(searchTe
 const sortedContacts = establishment => [...(establishment.contacts || [])].sort((a,b) => a.department.localeCompare(b.department,'fr'));
 const resourceTags=['Accueil','Protocoles','Plans / accès','Administratif','Urgence','À vérifier'];
 const contactRoles=['Anesthésiste','Chirurgien','Encadrement'];
-const contactGrades=['Praticien hospitalier','Interne'];
+const contactGrades=['Praticien hospitalier','Interne','Intérimaire'];
 // Compatibilité : les anciens fichiers uniques deviennent une ressource, sans perdre de donnée.
 const placeResources = place => Array.isArray(place.resources) ? place.resources : (place.attachment ? [{id:'legacy-resource',title:place.attachment.name,attachment:place.attachment,tags:[]}] : []);
 const resourceMatchesTag = (resource,tag) => !tag || (resource.tags||[]).includes(tag);
