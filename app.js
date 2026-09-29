@@ -149,7 +149,7 @@ function medDetail(id){
 
 function establishments(query=''){
   const list = getEstablishments().filter(place => `${place.name} ${place.city} ${place.service}`.toLocaleLowerCase('fr').includes(query.toLocaleLowerCase('fr')));
-  app.innerHTML = `${topbar()}${sectionTitle('Établissements',`${getEstablishments().length} lieux`,'home')}<label class="search"><span>⌕</span><input id="est-search" value="${escape(query)}" placeholder="Rechercher un établissement" autocomplete="off" /></label><p class="helper">Touche un établissement pour l’ouvrir. Maintiens sa fiche pour la modifier ou la supprimer.</p><section class="list">${list.length ? list.map(place => `<button class="item establishment-item holdable" data-est="${place.id}" data-hold="est|${place.id}" aria-label="${escape(place.name)}. Maintenir pour modifier ou supprimer."><span class="item-icon est-icon">⌂</span><span class="item-main"><h2>${escape(place.name)}</h2><p>${escape(place.city || 'Ville à renseigner')} · ${sortedContacts(place).length} contact${sortedContacts(place).length>1?'s':''}</p></span><span class="chev">›</span></button>`).join('') : empty('Aucun établissement trouvé.')}</section><button class="fab" data-add-est aria-label="Ajouter un établissement">+</button>${nav()}`;
+  app.innerHTML = `${topbar()}${sectionTitle('Établissements',`${getEstablishments().length} lieux`,'home')}<label class="search"><span>⌕</span><input id="est-search" value="${escape(query)}" placeholder="Rechercher un établissement" autocomplete="off" /></label><p class="helper">Touche un établissement pour l’ouvrir. Maintiens sa fiche pour la modifier ou la supprimer.</p><section class="list">${list.length ? list.map(place => `<button class="item establishment-item holdable" data-est="${place.id}" data-hold="est|${place.id}" aria-label="${escape(place.name)}. Maintenir pour modifier ou supprimer."><span class="item-icon est-icon">⌂</span><span class="item-main"><h2>${escape(place.name)}</h2><p>${escape(place.city || 'Ville à renseigner')} · ${countLabel(placeResources(place).length,'ressource')} · ${countLabel(sortedContacts(place).length,'contact')}</p></span><span class="chev">›</span></button>`).join('') : empty('Aucun établissement trouvé.')}</section><button class="fab" data-add-est aria-label="Ajouter un établissement">+</button>${nav()}`;
   $('#est-search').addEventListener('input', e => establishments(e.target.value)); bind();
 }
 function resourceCard(placeId, resource){
@@ -190,9 +190,14 @@ function generalitiesOf(specialty){
   if(Array.isArray(specialty.generalities))return specialty.generalities;
   return specialty.note?[{id:'legacy-generalities',title:'Généralités',text:specialty.note}]:[];
 }
+function countLabel(count,singular,plural=singular+'s'){return `${count} ${count===1?singular:plural}`;}
+function nestedPreview(item, childKey, childSingular, childPlural){
+  const generalities=generalitiesOf(item).length,children=(item[childKey]||[]).length;
+  return `${countLabel(generalities,'généralité')}${generalities||children?' · ':''}${countLabel(children,childSingular,childPlural)}`;
+}
 function anesthesia(){
   const terrains=[...getAnesthesiaTerrains()].sort(sortByName);
-  const cards=terrains.length?terrains.map(item=>{const count=(item.fiches||[]).length;return `<button class="item" data-anesthesia-terrain="${item.id}" data-hold="anesthesia-terrain|${item.id}" aria-label="${escape(item.name)}. Toucher pour ouvrir, maintenir pour modifier ou supprimer."><span class="item-icon anesthesia-icon">◌</span><span class="item-main"><h2>${escape(item.name)}</h2><p>${count} fiche${count>1?'s':''}</p></span><span class="chev">›</span></button>`;}).join(''):empty('Ajoute un terrain du patient pour classer tes fiches anesthésie.');
+  const cards=terrains.length?terrains.map(item=>`<button class="item" data-anesthesia-terrain="${item.id}" data-hold="anesthesia-terrain|${item.id}" aria-label="${escape(item.name)}. ${nestedPreview(item,'fiches','fiche')}. Toucher pour ouvrir, maintenir pour modifier ou supprimer."><span class="item-icon anesthesia-icon">◌</span><span class="item-main"><h2>${escape(item.name)}</h2><p>${nestedPreview(item,'fiches','fiche')}</p></span><span class="chev">›</span></button>`).join(''):empty('Ajoute un terrain du patient pour classer tes fiches anesthésie.');
   app.innerHTML=`${topbar()}${sectionTitle('Anesthésies',`${terrains.length} terrain${terrains.length>1?'s':''}`,'home')}<p class="helper">Terrains du patient. Touche pour consulter ; maintiens un terrain ou une fiche pour modifier ou supprimer.</p><section class="list anesthesia-list">${cards}</section><button class="fab" data-add-anesthesia-terrain aria-label="Ajouter un terrain">+</button>${nav()}`;
   bind();
 }
@@ -231,7 +236,7 @@ function anesthesiaSearchSection(query){
 
 function surgery(){
   const specialties=[...getSurgerySpecialties()].sort(sortByName), legacy=get('rp-surgery', surgeryDefaults);
-  const cards=specialties.length?specialties.map(item=>{const count=(item.interventions||[]).length;return `<button class="item" data-surgery-specialty="${item.id}" data-hold="surgery-specialty|${item.id}" aria-label="${escape(item.name)}. Toucher pour ouvrir, maintenir pour modifier ou supprimer."><span class="item-icon surgery-icon">✚</span><span class="item-main"><h2>${escape(item.name)}</h2><p>${count} intervention${count>1?'s':''}</p></span><span class="chev">›</span></button>`;}).join(''):empty('Ajoute une spécialité pour classer tes interventions.');
+  const cards=specialties.length?specialties.map(item=>`<button class="item" data-surgery-specialty="${item.id}" data-hold="surgery-specialty|${item.id}" aria-label="${escape(item.name)}. ${nestedPreview(item,'interventions','intervention')}. Toucher pour ouvrir, maintenir pour modifier ou supprimer."><span class="item-icon surgery-icon">✚</span><span class="item-main"><h2>${escape(item.name)}</h2><p>${nestedPreview(item,'interventions','intervention')}</p></span><span class="chev">›</span></button>`).join(''):empty('Ajoute une spécialité pour classer tes interventions.');
   const legacyCard=legacy.length?`<section class="legacy-block"><button class="legacy-surgery" data-surgery-legacy><span>↗</span><span><strong>Repères de chirurgie précédents</strong><small>${legacy.length} repère${legacy.length>1?'s':''} conservé${legacy.length>1?'s':''}</small></span><span class="chev">›</span></button><button class="legacy-clear" data-clear-legacy-surgery>Supprimer les ${legacy.length} repère${legacy.length>1?'s':''} précédent${legacy.length>1?'s':''}</button></section>`:'';
   app.innerHTML=`${topbar()}${sectionTitle('Chirurgies',`${specialties.length} spécialité${specialties.length>1?'s':''}`,'home')}<p class="helper">Touche une spécialité pour consulter ses fiches. Maintiens une spécialité ou une intervention pour la modifier ou la supprimer.</p><section class="list surgery-list">${cards}</section>${legacyCard}<button class="fab" data-add-surgery-specialty aria-label="Ajouter une spécialité">+</button>${nav()}`;
   bind();
@@ -289,7 +294,7 @@ function resourcePage(kind){
   if(!config) return home();
   const items = get(config.key, config.fallback);
   const cards = items.length ? items.map(item => kind==='languages'
-    ? `<article class="detail-card resource-folder">${attachmentLink(item.attachment)}<button class="holdable" data-language="${item.id}" data-hold="resource|${kind}|${item.id}" aria-label="${escape(item.title)}. Touchez pour ouvrir, maintenez pour modifier ou supprimer."><h2>${escape(item.title)}</h2><p class="multiline">${escape(item.text || 'À compléter.')}</p><span class="chev">›</span></button></article>`
+    ? `<article class="detail-card resource-folder">${attachmentLink(item.attachment)}<button class="holdable" data-language="${item.id}" data-hold="resource|${kind}|${item.id}" aria-label="${escape(item.title)}. ${countLabel((item.entries||[]).length,'note')}. Touchez pour ouvrir, maintenez pour modifier ou supprimer."><h2>${escape(item.title)}</h2><p class="folder-preview">${countLabel((item.entries||[]).length,'note')}</p>${item.text?`<p class="multiline folder-intro">${escape(item.text)}</p>`:''}<span class="chev">›</span></button></article>`
     : `<article class="detail-card holdable" tabindex="0" role="button" data-hold="resource|${kind}|${item.id}"><h2>${escape(item.title)}</h2><p class="multiline">${escape(item.text || 'À compléter.')}</p>${item.attachment?`<p><strong>⌇ Fichier joint : ${escape(item.attachment.name)}</strong></p>`:''}${attachmentLink(item.attachment)}</article>`).join('') : empty(config.empty);
   app.innerHTML = `${topbar()}${sectionTitle(config.title,config.subtitle,'home')}<p class="helper">${kind==='languages'?'Touche un dossier pour l’ouvrir. Maintiens-le pour le modifier ou le supprimer.':'Maintiens une entrée pour la modifier ou la supprimer.'}</p><section class="list">${cards}</section><button class="fab" data-add-resource="${kind}" aria-label="Ajouter ${config.singular}">+</button>${nav()}`;
   bind();
@@ -489,6 +494,6 @@ document.addEventListener('contextmenu',event=>{
 if('serviceWorker' in navigator){
   let refreshing=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;window.location.reload();}});
-  navigator.serviceWorker.register('sw.js?v=28',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=29',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
 }
 home();

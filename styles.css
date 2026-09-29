@@ -34,3 +34,6 @@ input,textarea,select{-webkit-user-select:text;user-select:text;-webkit-touch-ca
 
 /* v28 — accès explicite aux repères de chirurgie précédents. */
 .legacy-block{margin-top:10px}.legacy-clear{display:block;width:calc(100% - 12px);margin:8px 6px 0;border:1px solid #edb7bb;border-radius:12px;padding:12px 14px;background:#fff7f6;color:#a23d48;font:700 13px/1.2 inherit;text-align:left}.legacy-clear-page{width:100%;margin:16px 0}.legacy-entry{display:flex;gap:12px;align-items:flex-start}.legacy-entry>div{flex:1;min-width:0}.inline-delete{flex:0 0 auto;border:1px solid #edb7bb;background:#fff7f6;color:#a23d48;border-radius:10px;padding:9px 10px;font:700 12px/1 inherit}
+
+/* v29 — aperçu des contenus dans les listes de dossiers. */
+.folder-preview{color:var(--muted)!important;font-size:13px!important;font-weight:700;margin:0 0 5px!important}.folder-intro{font-size:13px!important;line-height:1.35!important;margin:0!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
