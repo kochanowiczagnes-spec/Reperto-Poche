@@ -32,6 +32,8 @@ const protocolDefaults = [
 const noteDefaults = [];
 // Rubriques d’accueil personnelles : elles restent vierges pour que chaque repère suive les protocoles locaux.
 const surgeryDefaults = [];
+// Les anciens repères de chirurgie restent dans rp-surgery. Les nouvelles fiches sont rangées à part, par spécialité.
+const surgerySpecialtyDefaults = [];
 const pediatricsDefaults = [];
 // Nouvelle rubrique isolée : aucune donnée existante n’est modifiée.
 const emergencyDefaults = [];
@@ -43,6 +45,8 @@ const getEstablishments = () => get('rp-establishments', establishmentDefaults);
 const setEstablishments = value => set('rp-establishments', value);
 const getPlanning = () => get('rp-planning', planningDefaults);
 const setPlanning = value => set('rp-planning', value);
+const getSurgerySpecialties = () => get('rp-surgery-specialties', surgerySpecialtyDefaults);
+const setSurgerySpecialties = value => set('rp-surgery-specialties', value);
 const backupCollections = {
   'rp-meds': medDefaults,
   'rp-establishments': establishmentDefaults,
@@ -51,31 +55,37 @@ const backupCollections = {
   'rp-protocols': protocolDefaults,
   'rp-notes': noteDefaults,
   'rp-surgery': surgeryDefaults,
+  'rp-surgery-specialties': surgerySpecialtyDefaults,
   'rp-pediatrics': pediatricsDefaults,
   'rp-emergencies': emergencyDefaults
 };
 const backupCollectionKeys = Object.keys(backupCollections);
 // Les sauvegardes antérieures aux nouvelles rubriques restent restaurables :
 // les collections absentes sont créées vides, sans toucher aux données existantes.
-const requiredBackupKeys = backupCollectionKeys.filter(key=>!['rp-surgery','rp-pediatrics','rp-emergencies'].includes(key));
+const requiredBackupKeys = backupCollectionKeys.filter(key=>!['rp-surgery','rp-surgery-specialties','rp-pediatrics','rp-emergencies'].includes(key));
+function backupData(){
+  const data=Object.fromEntries(backupCollectionKeys.map(key=>[key,get(key,backupCollections[key])]));
+  for(let index=0;index<localStorage.length;index++){const key=localStorage.key(index);if(!key||!key.startsWith('rp-')||key in data)continue;try{data[key]=JSON.parse(localStorage.getItem(key));}catch{}}
+  return data;
+}
 function makeBackup(){
-  return {app:'Réperto’Poche',format:'backup',version:1,exportedAt:new Date().toISOString(),data:Object.fromEntries(backupCollectionKeys.map(key=>[key,get(key,backupCollections[key])]))};
+  return {app:'Réperto’Poche',format:'backup',version:2,exportedAt:new Date().toISOString(),data:backupData()};
 }
 function validBackup(backup){
-  return !!(backup&&backup.app==='Réperto’Poche'&&backup.format==='backup'&&backup.data&&requiredBackupKeys.every(key=>Array.isArray(backup.data[key]))&&backupCollectionKeys.every(key=>!(key in backup.data)||Array.isArray(backup.data[key])));
+  return !!(backup&&backup.app==='Réperto’Poche'&&backup.format==='backup'&&backup.data&&typeof backup.data==='object'&&!Array.isArray(backup.data)&&requiredBackupKeys.every(key=>Array.isArray(backup.data[key]))&&backupCollectionKeys.every(key=>!(key in backup.data)||Array.isArray(backup.data[key])));
 }
 function downloadBackup(){
   const backup=makeBackup(),stamp=new Date().toISOString().slice(0,10),blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');
   link.href=url;link.download=`Reperto-Poche-sauvegarde-${stamp}.json`;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Sauvegarde téléchargée : garde-la dans Fichiers ou iCloud Drive');
 }
 function restoreBackup(backup){
-  const before=Object.fromEntries(backupCollectionKeys.map(key=>[key,localStorage.getItem(key)]));
-  try{backupCollectionKeys.forEach(key=>set(key,Array.isArray(backup.data[key])?backup.data[key]:backupCollections[key]));}
-  catch(error){backupCollectionKeys.forEach(key=>before[key]===null?localStorage.removeItem(key):localStorage.setItem(key,before[key]));throw new Error('Espace insuffisant : la restauration n’a pas été appliquée.');}
+  const keys=Object.keys(backup.data).filter(key=>key.startsWith('rp-')),before=Object.fromEntries(keys.map(key=>[key,localStorage.getItem(key)]));
+  try{keys.forEach(key=>localStorage.setItem(key,JSON.stringify(backup.data[key])));}
+  catch(error){keys.forEach(key=>before[key]===null?localStorage.removeItem(key):localStorage.setItem(key,before[key]));throw new Error('Espace insuffisant : la restauration n’a pas été appliquée.');}
 }
 function chooseBackup(){
   const input=document.createElement('input');input.type='file';input.accept='application/json,.json';
-  input.onchange=()=>{const file=input.files&&input.files[0];if(!file)return;if(file.size>25*1024*1024)return toast('Cette sauvegarde dépasse 25 Mo.');const reader=new FileReader();reader.onload=()=>{try{const backup=JSON.parse(reader.result);if(!validBackup(backup))throw new Error();const date=backup.exportedAt?new Date(backup.exportedAt).toLocaleDateString('fr-FR'):'date inconnue';menuSheet('Restaurer cette sauvegarde ?',[{id:'restore',label:'Restaurer mes données',hint:`Sauvegarde du ${date} · remplace les données actuelles`,icon:'↻',danger:true,action:()=>{try{restoreBackup(backup);profile();toast('Sauvegarde restaurée sur cet iPhone');}catch(error){toast(error.message);}}},{id:'cancel',label:'Annuler',hint:'Conserver les données actuelles',icon:'‹',action:()=>{}}]);}catch{toast('Ce fichier n’est pas une sauvegarde Réperto’Poche valide.');}};reader.onerror=()=>toast('Lecture du fichier impossible.');reader.readAsText(file);};input.click();
+  input.onchange=()=>{const file=input.files&&input.files[0];if(!file)return;if(file.size>25*1024*1024)return toast('Cette sauvegarde dépasse 25 Mo.');const reader=new FileReader();reader.onload=()=>{try{const backup=JSON.parse(reader.result);if(!validBackup(backup))throw new Error();const date=backup.exportedAt?new Date(backup.exportedAt).toLocaleDateString('fr-FR'):'date inconnue';menuSheet('Restaurer cette sauvegarde ?',[{id:'restore',label:'Restaurer mes données',hint:`Sauvegarde du ${date} · remplace les données présentes dans le fichier`,icon:'↻',danger:true,action:()=>{try{restoreBackup(backup);profile();toast('Sauvegarde restaurée sur cet iPhone');}catch(error){toast(error.message);}}},{id:'cancel',label:'Annuler',hint:'Conserver les données actuelles',icon:'‹',action:()=>{}}]);}catch{toast('Ce fichier n’est pas une sauvegarde Réperto’Poche valide.');}};reader.onerror=()=>toast('Lecture du fichier impossible.');reader.readAsText(file);};input.click();
 }
 const uid = prefix => `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 const escape = text => String(text || '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
@@ -105,7 +115,7 @@ function home(){
   const est = getEstablishments(); const events = getPlanning();
   app.innerHTML = `${topbar()}<p class="eyebrow">Bonjour Agnès</p><h1 class="headline">Tout retrouver,<br>même dans l’urgence.</h1><p class="sub">Ton carnet professionnel, toujours dans la poche.</p>
   <label class="search"><span>⌕</span><input id="global-search" placeholder="Rechercher dans Réperto’Poche" autocomplete="off" /></label>
-  <section id="home-folders" class="grid">${category('emergencies','!','Urgences',`${get('rp-emergencies', emergencyDefaults).length} repère${get('rp-emergencies', emergencyDefaults).length>1?'s':''}`,'emergencies')}${category('est','⌂','Établissements',`${est.length} lieux`,'establishments')}${category('med','●','Médicaments',`${getMeds().length} fiches`,'meds')}${category('surgery','✚','Chirurgie',`${get('rp-surgery', surgeryDefaults).length} repère${get('rp-surgery', surgeryDefaults).length>1?'s':''}`,'surgery')}${category('pediatrics','♧','Pédiatrie',`${get('rp-pediatrics', pediatricsDefaults).length} repère${get('rp-pediatrics', pediatricsDefaults).length>1?'s':''}`,'pediatrics')}${category('lang','文','Langues',`${get('rp-languages', languageDefaults).length} dossiers`,'languages')}${category('docs','▤','Protocoles',`${get('rp-protocols', protocolDefaults).length} document${get('rp-protocols', protocolDefaults).length>1?'s':''}`,'protocols')}${category('notes','✎','Notes rapides',`${get('rp-notes', noteDefaults).length} note${get('rp-notes', noteDefaults).length>1?'s':''}`,'notes')}${category('plan','□','Planning',events.length ? `${events.length} créneau${events.length>1?'x':''}` : 'À organiser','planning')}</section><section id="home-search-results" class="search-results" hidden></section>${nav('home')}`;
+  <section id="home-folders" class="grid">${category('emergencies','!','Urgences',`${get('rp-emergencies', emergencyDefaults).length} repère${get('rp-emergencies', emergencyDefaults).length>1?'s':''}`,'emergencies')}${category('est','⌂','Établissements',`${est.length} lieux`,'establishments')}${category('med','●','Médicaments',`${getMeds().length} fiches`,'meds')}${category('surgery','✚','Chirurgie',`${getSurgerySpecialties().length} spécialité${getSurgerySpecialties().length>1?'s':''}`,'surgery')}${category('pediatrics','♧','Pédiatrie',`${get('rp-pediatrics', pediatricsDefaults).length} repère${get('rp-pediatrics', pediatricsDefaults).length>1?'s':''}`,'pediatrics')}${category('lang','文','Langues',`${get('rp-languages', languageDefaults).length} dossiers`,'languages')}${category('docs','▤','Protocoles',`${get('rp-protocols', protocolDefaults).length} document${get('rp-protocols', protocolDefaults).length>1?'s':''}`,'protocols')}${category('notes','✎','Notes rapides',`${get('rp-notes', noteDefaults).length} note${get('rp-notes', noteDefaults).length>1?'s':''}`,'notes')}${category('plan','□','Planning',events.length ? `${events.length} créneau${events.length>1?'x':''}` : 'À organiser','planning')}</section><section id="home-search-results" class="search-results" hidden></section>${nav('home')}`;
   $('#global-search').addEventListener('input', e => globalSearch(e.target.value)); bind();
 }
 
@@ -171,6 +181,52 @@ function planning(cursor = new Date().getFullYear()+'-'+String(new Date().getMon
 }
 function eventRow(event,activeDate=''){const d=new Date(`${(activeDate||eventStart(event))}T12:00:00`),duration=durationLabel(eventDurationMinutes(event)),range=eventStart(event)!==eventEnd(event)?`<small class="event-range">${dateRangeLabel(event)}</small>`:'';return `<button class="item event-item" data-hold="event|${event.id}" aria-label="${escape(event.title)}. Maintenir pour modifier ou supprimer."><span class="event-date"><b>${String(d.getDate()).padStart(2,'0')}</b><small>${['JAN','FÉV','MAR','AVR','MAI','JUN','JUL','AOÛ','SEP','OCT','NOV','DÉC'][d.getMonth()]}</small></span><span class="item-main"><h2>${escape(event.title)}</h2><p>${event.start||'Heure à préciser'}${event.end?` – ${event.end}`:''}${duration?` · ${duration}`:''}${event.place?` · ${escape(event.place)}`:''}</p>${range}</span><i class="event-type ${event.type}"></i><span class="chev">›</span></button>${attachmentLink(event.attachment)}`;}
 
+function generalitiesOf(specialty){
+  if(Array.isArray(specialty.generalities))return specialty.generalities;
+  return specialty.note?[{id:'legacy-generalities',title:'Généralités',text:specialty.note}]:[];
+}
+function surgery(){
+  const specialties=[...getSurgerySpecialties()].sort(sortByName), legacy=get('rp-surgery', surgeryDefaults);
+  const cards=specialties.length?specialties.map(item=>{const count=(item.interventions||[]).length;return `<button class="item" data-surgery-specialty="${item.id}" data-hold="surgery-specialty|${item.id}" aria-label="${escape(item.name)}. Toucher pour ouvrir, maintenir pour modifier ou supprimer."><span class="item-icon surgery-icon">✚</span><span class="item-main"><h2>${escape(item.name)}</h2><p>${count} intervention${count>1?'s':''}</p></span><span class="chev">›</span></button>`;}).join(''):empty('Ajoute une spécialité pour classer tes interventions.');
+  const legacyCard=legacy.length?`<button class="legacy-surgery" data-surgery-legacy><span>↗</span><span><strong>Repères de chirurgie précédents</strong><small>${legacy.length} repère${legacy.length>1?'s':''} conservé${legacy.length>1?'s':''}</small></span><span class="chev">›</span></button>`:'';
+  app.innerHTML=`${topbar()}${sectionTitle('Chirurgies',`${specialties.length} spécialité${specialties.length>1?'s':''}`,'home')}<p class="helper">Touche une spécialité pour consulter ses fiches. Maintiens une spécialité ou une intervention pour la modifier ou la supprimer.</p><section class="list surgery-list">${cards}</section>${legacyCard}<button class="fab" data-add-surgery-specialty aria-label="Ajouter une spécialité">+</button>${nav()}`;
+  bind();
+}
+function surgerySpecialty(id){
+  const specialty=getSurgerySpecialties().find(item=>item.id===id);if(!specialty)return surgery();
+  const generalities=generalitiesOf(specialty), interventions=[...(specialty.interventions||[])].sort((a,b)=>sortByName({name:a.name},{name:b.name}));
+  const generalCards=generalities.length?generalities.map(item=>`<article class="detail-card holdable surgery-general" tabindex="0" role="button" data-hold="surgery-general|${specialty.id}|${item.id}"><h2>${escape(item.title)}</h2><p class="multiline">${escape(item.text||'À compléter.')}</p></article>`).join(''):empty('Ajoute tes propres notes de généralités si tu en as besoin.');
+  const cards=interventions.length?interventions.map(item=>`<button class="item surgery-intervention-item" data-surgery-intervention="${specialty.id}|${item.id}" data-hold="surgery-intervention|${specialty.id}|${item.id}" aria-label="${escape(item.name)}. Toucher pour consulter, maintenir pour modifier ou supprimer."><span class="item-main"><h2>${escape(item.name)}</h2></span><span class="chev">›</span></button>`).join(''):empty('Ajoute une intervention dans cette spécialité.');
+  app.innerHTML=`${topbar()}${sectionTitle(escape(specialty.name),'Chirurgies','surgery')}<p class="helper">Repères personnels — à vérifier selon le protocole local, la prescription, le patient et l’établissement.</p><div class="subsection-head"><div><h2>Généralités</h2><p>${generalities.length} note${generalities.length>1?'s':''}</p></div><button class="small-add" data-add-surgery-general="${specialty.id}" aria-label="Ajouter une note de généralités">+</button></div><section class="list surgery-general-list">${generalCards}</section><div class="subsection-head surgery-interventions-head"><div><h2>Interventions</h2><p>${interventions.length} fiche${interventions.length>1?'s':''}</p></div></div><section class="list surgery-list">${cards}</section><button class="fab" data-add-surgery-intervention="${specialty.id}" aria-label="Ajouter une intervention">+</button>${nav()}`;
+  bind();
+}
+function surgeryInterventionDetail(specialtyId, interventionId){
+  const specialty=getSurgerySpecialties().find(item=>item.id===specialtyId), intervention=specialty&&(specialty.interventions||[]).find(item=>item.id===interventionId);if(!intervention)return surgerySpecialty(specialtyId);
+  const antibiotic=intervention.antibioprophylaxis==='yes'?`Oui${intervention.antibiotic?` · ${escape(intervention.antibiotic)}`:''}`:'Non';
+  app.innerHTML=`${topbar()}${sectionTitle(escape(intervention.name),escape(specialty.name),'surgery-specialty')}<p class="helper">Repère personnel — à vérifier selon le protocole local, la prescription et le patient.</p><section class="holdable" tabindex="0" role="button" data-hold="surgery-intervention|${specialty.id}|${intervention.id}">${infoCard('Durée habituelle',intervention.duration)}${infoCard('Position sur table',intervention.position)}${infoCard('Équipements',intervention.equipment)}${infoCard('Drogues / produits',intervention.products)}${infoCard('Antibioprophylaxie',antibiotic)}${infoCard('Remarques et repères importants',intervention.notes)}</section>${nav()}`;
+  bind();
+}
+function surgerySpecialtyForm(existing){
+  const specialty=existing||{name:'',generalities:[],interventions:[]};
+  openSheet(`${existing?'Modifier':'Nouvelle'} spécialité`, `<div class="field"><label>Nom de la spécialité</label><input required name="name" value="${escape(specialty.name)}" placeholder="Ex. Orthopédie"></div>`, values=>{const list=getSurgerySpecialties();if(existing)setSurgerySpecialties(list.map(item=>item.id===existing.id?{...item,...values}:item));else setSurgerySpecialties([...list,{id:uid('surgery-specialty'),...values,generalities:[],interventions:[]}]);surgery();toast('Spécialité enregistrée sur cet iPhone');});
+}
+function surgeryGeneralForm(specialtyId, existing){
+  const specialty=getSurgerySpecialties().find(item=>item.id===specialtyId);if(!specialty)return surgery();
+  const note=existing||{title:'',text:''};
+  openSheet(`${existing?'Modifier':'Nouvelle'} note — Généralités`, `<div class="field"><label>Titre</label><input required name="title" value="${escape(note.title)}" placeholder="Ex. Installation"></div><div class="field"><label>Texte libre</label><textarea name="text">${escape(note.text)}</textarea></div>`, values=>{setSurgerySpecialties(getSurgerySpecialties().map(item=>{if(item.id!==specialtyId)return item;const generalities=generalitiesOf(item);return {...item,note:'',generalities:existing?generalities.map(entry=>entry.id===existing.id?{...entry,...values}:entry):[...generalities,{id:uid('surgery-general'),...values}]};}));surgerySpecialty(specialtyId);toast('Note enregistrée dans Généralités');});
+}
+function surgeryInterventionForm(specialtyId, existing){
+  const specialty=getSurgerySpecialties().find(item=>item.id===specialtyId);if(!specialty)return surgery();
+  const intervention=existing||{name:'',duration:'',position:'',equipment:'',products:'',antibioprophylaxis:'no',antibiotic:'',notes:''};
+  openSheet(`${existing?'Modifier':'Nouvelle'} intervention — ${escape(specialty.name)}`, `<div class="field"><label>Nom de l’intervention</label><input required name="name" value="${escape(intervention.name)}" placeholder="Ex. Prothèse totale de hanche"></div><div class="field"><label>Durée habituelle</label><input name="duration" value="${escape(intervention.duration)}" placeholder="Ex. 1 h 30"></div><div class="field"><label>Position sur table</label><textarea name="position" placeholder="Ex. Décubitus dorsal, bras…">${escape(intervention.position)}</textarea></div><div class="field"><label>Équipements</label><textarea name="equipment" placeholder="Installation, matériel, monitorage…">${escape(intervention.equipment)}</textarea></div><div class="field"><label>Drogues / produits</label><textarea name="products" placeholder="À vérifier selon protocole local et prescription.">${escape(intervention.products)}</textarea></div><div class="field"><label>Antibioprophylaxie</label><select name="antibioprophylaxis"><option value="no" ${intervention.antibioprophylaxis!=='yes'?'selected':''}>Non</option><option value="yes" ${intervention.antibioprophylaxis==='yes'?'selected':''}>Oui</option></select></div><div class="field"><label>Antibiotique si oui</label><input name="antibiotic" value="${escape(intervention.antibiotic)}" placeholder="À vérifier selon protocole local"></div><div class="field"><label>Remarques et repères importants</label><textarea name="notes" placeholder="Points de vigilance, transmissions, repères…">${escape(intervention.notes)}</textarea></div><p class="sheet-intro">Cette fiche personnelle ne remplace pas le protocole local, la prescription ni l’évaluation du patient.</p>`, values=>{if(values.antibioprophylaxis!=='yes')values.antibiotic='';const list=getSurgerySpecialties().map(item=>{if(item.id!==specialtyId)return item;const interventions=item.interventions||[];return {...item,interventions:existing?interventions.map(entry=>entry.id===existing.id?{...entry,...values}:entry):[...interventions,{id:uid('intervention'),...values}]};});setSurgerySpecialties(list);surgerySpecialty(specialtyId);toast('Intervention enregistrée sur cet iPhone');});
+}
+function surgeryLegacy(){resourcePage('surgery');}
+function surgerySearchSection(query){
+  const contains=value=>searchText(value).includes(searchText(query));
+  const found=getSurgerySpecialties().flatMap(specialty=>(specialty.interventions||[]).filter(item=>contains(`${specialty.name} ${(generalitiesOf(specialty)||[]).map(note=>`${note.title} ${note.text}`).join(' ')} ${item.name} ${item.duration} ${item.position} ${item.equipment} ${item.products} ${item.antibiotic} ${item.notes}`)).map(item=>({specialty,item})));
+  return found.length?`<h2>Chirurgies</h2><section class="list">${found.map(({specialty,item})=>`<button class="item" data-surgery-intervention="${specialty.id}|${item.id}"><span class="item-icon surgery-icon">✚</span><span class="item-main"><h2>${escape(item.name)}</h2><p>${escape(specialty.name)}${item.duration?` · ${escape(item.duration)}`:''}</p></span><span class="chev">›</span></button>`).join('')}</section>`:'';
+}
+
 const resourceConfig = {
   languages:{title:'Langues étrangères',singular:'dossier de langue',subtitle:'Phrases et repères par langue',key:'rp-languages',fallback:languageDefaults,empty:'Aucun dossier de langue pour le moment.'},
   protocols:{title:'Protocoles',singular:'protocole',subtitle:'Recommandations et documents utiles',key:'rp-protocols',fallback:protocolDefaults,empty:'Aucun protocole pour le moment.'},
@@ -218,7 +274,8 @@ function renderSearchResults(query){
   const events=getPlanning().filter(e=>contains(`${e.title} ${e.place} ${e.note}`));
   const resources=[['Langues étrangères',get('rp-languages',languageDefaults)],['Protocoles',get('rp-protocols',protocolDefaults)],['Notes rapides',get('rp-notes',noteDefaults)],['Chirurgie',get('rp-surgery',surgeryDefaults)],['Pédiatrie',get('rp-pediatrics',pediatricsDefaults)],['Urgences',get('rp-emergencies',emergencyDefaults)]].map(([title,items])=>[title,items.filter(item=>contains(`${item.title} ${item.text} ${(item.entries||[]).map(entry=>`${entry.title} ${entry.text}`).join(' ')}`))]);
   const resourceMarkup=resources.map(([title,items])=>resourceSearchSection(title,items)).join('');
-  target.innerHTML=`<p class="helper">Résultats pour « ${escape(query)} »</p>${meds.length?`<h2>Médicaments</h2><section class="list">${meds.map(m=>`<button class="item" data-med="${m.id}"><span class="item-icon med-icon">●</span><span class="item-main"><h2>${escape(m.name)}</h2><p>${escape(m.class)}</p></span><span class="chev">›</span></button>`).join('')}</section>`:''}${establishmentsFound.length?`<h2>Établissements</h2><section class="list">${establishmentsFound.map(p=>`<button class="item" data-est="${p.id}"><span class="item-icon est-icon">⌂</span><span class="item-main"><h2>${escape(p.name)}</h2><p>${escape(p.city)}</p></span><span class="chev">›</span></button>`).join('')}</section>`:''}${events.length?`<h2>Planning</h2><section class="list">${events.map(eventRow).join('')}</section>`:''}${resourceMarkup||(!meds.length&&!establishmentsFound.length&&!events.length?empty('Aucun résultat pour le moment.'): '')}`;
+  const surgeriesMarkup=surgerySearchSection(query);
+  target.innerHTML=`<p class="helper">Résultats pour « ${escape(query)} »</p>${meds.length?`<h2>Médicaments</h2><section class="list">${meds.map(m=>`<button class="item" data-med="${m.id}"><span class="item-icon med-icon">●</span><span class="item-main"><h2>${escape(m.name)}</h2><p>${escape(m.class)}</p></span><span class="chev">›</span></button>`).join('')}</section>`:''}${establishmentsFound.length?`<h2>Établissements</h2><section class="list">${establishmentsFound.map(p=>`<button class="item" data-est="${p.id}"><span class="item-icon est-icon">⌂</span><span class="item-main"><h2>${escape(p.name)}</h2><p>${escape(p.city)}</p></span><span class="chev">›</span></button>`).join('')}</section>`:''}${events.length?`<h2>Planning</h2><section class="list">${events.map(eventRow).join('')}</section>`:''}${(resourceMarkup||surgeriesMarkup)?`${resourceMarkup}${surgeriesMarkup}`:(!meds.length&&!establishmentsFound.length&&!events.length?empty('Aucun résultat pour le moment.'): '')}`;
   bind();
 }
 function globalSearch(query){
@@ -233,7 +290,8 @@ function globalSearch(query){
   const events=getPlanning().filter(e=>contains(`${e.title} ${e.place} ${e.note}`));
   const resources=[['Langues étrangères',get('rp-languages',languageDefaults)],['Protocoles',get('rp-protocols',protocolDefaults)],['Notes rapides',get('rp-notes',noteDefaults)],['Chirurgie',get('rp-surgery',surgeryDefaults)],['Pédiatrie',get('rp-pediatrics',pediatricsDefaults)],['Urgences',get('rp-emergencies',emergencyDefaults)]].map(([title,items])=>[title,items.filter(item=>contains(`${item.title} ${item.text} ${(item.entries||[]).map(entry=>`${entry.title} ${entry.text}`).join(' ')}`))]);
   const resourceMarkup=resources.map(([title,items])=>resourceSearchSection(title,items)).join('');
-  results.innerHTML=`<p class="helper">Résultats pour « ${escape(term)} »</p>${meds.length?`<h2>Médicaments</h2><section class="list">${meds.map(m=>`<button class="item" data-med="${m.id}"><span class="item-icon med-icon">●</span><span class="item-main"><h2>${escape(m.name)}</h2><p>${escape(m.class)}</p></span><span class="chev">›</span></button>`).join('')}</section>`:''}${establishmentsFound.length?`<h2>Établissements</h2><section class="list">${establishmentsFound.map(p=>`<button class="item" data-est="${p.id}"><span class="item-icon est-icon">⌂</span><span class="item-main"><h2>${escape(p.name)}</h2><p>${escape(p.city)}</p></span><span class="chev">›</span></button>`).join('')}</section>`:''}${events.length?`<h2>Planning</h2><section class="list">${events.map(eventRow).join('')}</section>`:''}${resourceMarkup||(!meds.length&&!establishmentsFound.length&&!events.length?empty('Aucun résultat pour le moment.'): '')}`;
+  const surgeriesMarkup=surgerySearchSection(query);
+  results.innerHTML=`<p class="helper">Résultats pour « ${escape(term)} »</p>${meds.length?`<h2>Médicaments</h2><section class="list">${meds.map(m=>`<button class="item" data-med="${m.id}"><span class="item-icon med-icon">●</span><span class="item-main"><h2>${escape(m.name)}</h2><p>${escape(m.class)}</p></span><span class="chev">›</span></button>`).join('')}</section>`:''}${establishmentsFound.length?`<h2>Établissements</h2><section class="list">${establishmentsFound.map(p=>`<button class="item" data-est="${p.id}"><span class="item-icon est-icon">⌂</span><span class="item-main"><h2>${escape(p.name)}</h2><p>${escape(p.city)}</p></span><span class="chev">›</span></button>`).join('')}</section>`:''}${events.length?`<h2>Planning</h2><section class="list">${events.map(eventRow).join('')}</section>`:''}${(resourceMarkup||surgeriesMarkup)?`${resourceMarkup}${surgeriesMarkup}`:(!meds.length&&!establishmentsFound.length&&!events.length?empty('Aucun résultat pour le moment.'): '')}`;
   bind();
 }
 
@@ -323,6 +381,9 @@ function entryMenu(value){
   if(type==='contact'){const placeId=parts[0],contactId=parts[1],place=getEstablishments().find(entry=>entry.id===placeId),item=place&&(place.contacts||[]).find(entry=>entry.id===contactId);if(!item)return;return menuSheet(item.department,[{id:'edit',label:'Modifier',hint:'Ouvrir le contact',icon:'✎',action:()=>contactForm(placeId,item)},{id:'delete',label:'Supprimer',hint:'Retirer ce contact',icon:'×',danger:true,action:()=>deleteEntry('ce contact',()=>{setEstablishments(getEstablishments().map(entry=>entry.id===placeId?{...entry,contacts:(entry.contacts||[]).filter(contact=>contact.id!==contactId)}:entry));establishmentDetail(placeId);})}]);}
   if(type==='place-resource'){const placeId=parts[0],resourceId=parts[1],place=getEstablishments().find(entry=>entry.id===placeId),item=place&&placeResources(place).find(entry=>entry.id===resourceId);if(!item)return;return menuSheet(item.title||item.attachment.name,[{id:'edit',label:'Modifier',hint:'Renommer ou modifier les tags',icon:'✎',action:()=>placeResourceForm(placeId,item)},{id:'delete',label:'Supprimer',hint:'Retirer ce fichier ou cette photo',icon:'×',danger:true,action:()=>deleteEntry('cette ressource',()=>{setEstablishments(getEstablishments().map(entry=>entry.id===placeId?{...entry,resources:placeResources(entry).filter(resource=>resource.id!==resourceId),attachment:null}:entry));establishmentDetail(placeId);})}]);}
   if(type==='event'){const item=getPlanning().find(entry=>entry.id===parts[0]);if(!item)return;return menuSheet(item.title,[{id:'edit',label:'Modifier',hint:'Ouvrir le créneau',icon:'✎',action:()=>eventForm(item)},{id:'delete',label:'Supprimer',hint:'Retirer ce créneau',icon:'×',danger:true,action:()=>deleteEntry('ce créneau',()=>{setPlanning(getPlanning().filter(entry=>entry.id!==item.id));planning(eventStart(item).slice(0,7),eventStart(item));})}]);}
+  if(type==='surgery-general'){const specialtyId=parts[0],noteId=parts[1],specialty=getSurgerySpecialties().find(entry=>entry.id===specialtyId),item=specialty&&generalitiesOf(specialty).find(entry=>entry.id===noteId);if(!item)return;return menuSheet(item.title,[{id:'edit',label:'Modifier',hint:'Ouvrir cette note',icon:'✎',action:()=>surgeryGeneralForm(specialtyId,item)},{id:'delete',label:'Supprimer',hint:'Retirer cette note',icon:'×',danger:true,action:()=>deleteEntry('cette note',()=>{setSurgerySpecialties(getSurgerySpecialties().map(entry=>entry.id===specialtyId?{...entry,note:'',generalities:generalitiesOf(entry).filter(row=>row.id!==noteId)}:entry));surgerySpecialty(specialtyId);})}]);}
+  if(type==='surgery-specialty'){const item=getSurgerySpecialties().find(entry=>entry.id===parts[0]);if(!item)return;return menuSheet(item.name,[{id:'edit',label:'Modifier',hint:'Ouvrir la spécialité',icon:'✎',action:()=>surgerySpecialtyForm(item)},{id:'delete',label:'Supprimer',hint:'Retirer la spécialité et ses interventions',icon:'×',danger:true,action:()=>deleteEntry('cette spécialité',()=>{setSurgerySpecialties(getSurgerySpecialties().filter(entry=>entry.id!==item.id));surgery();})}]);}
+  if(type==='surgery-intervention'){const specialtyId=parts[0],interventionId=parts[1],specialty=getSurgerySpecialties().find(entry=>entry.id===specialtyId),item=specialty&&(specialty.interventions||[]).find(entry=>entry.id===interventionId);if(!item)return;return menuSheet(item.name,[{id:'edit',label:'Modifier',hint:'Ouvrir la fiche',icon:'✎',action:()=>surgeryInterventionForm(specialtyId,item)},{id:'delete',label:'Supprimer',hint:'Retirer cette intervention',icon:'×',danger:true,action:()=>deleteEntry('cette intervention',()=>{setSurgerySpecialties(getSurgerySpecialties().map(entry=>entry.id===specialtyId?{...entry,interventions:(entry.interventions||[]).filter(row=>row.id!==interventionId)}:entry));surgerySpecialty(specialtyId);})}]);}
   if(type==='resource'){const kind=parts[0],id=parts[1],config=resourceConfig[kind],item=config&&get(config.key,config.fallback).find(entry=>entry.id===id);if(!item)return;return menuSheet(item.title,[{id:'edit',label:'Modifier',hint:'Ouvrir l’entrée',icon:'✎',action:()=>resourceForm(kind,item)},{id:'delete',label:'Supprimer',hint:'Retirer cette entrée',icon:'×',danger:true,action:()=>deleteEntry('cette entrée',()=>{set(config.key,get(config.key,config.fallback).filter(entry=>entry.id!==item.id));resourcePage(kind);})}]);}
   if(type==='language-note'){const languageId=parts[0],noteId=parts[1],language=get('rp-languages',languageDefaults).find(entry=>entry.id===languageId),item=language&&(language.entries||[]).find(entry=>entry.id===noteId);if(!item)return;return menuSheet(item.title,[{id:'edit',label:'Modifier',hint:'Ouvrir cette note',icon:'✎',action:()=>languageNoteForm(languageId,item)},{id:'delete',label:'Supprimer',hint:'Retirer cette note',icon:'×',danger:true,action:()=>deleteEntry('cette note',()=>{set('rp-languages',get('rp-languages',languageDefaults).map(entry=>entry.id===languageId?{...entry,entries:(entry.entries||[]).filter(note=>note.id!==noteId)}:entry));languageDetail(languageId);})}]);}
 }
@@ -331,7 +392,7 @@ function addMenu(){
   const modal=document.createElement('div');modal.className='modal menu-modal';modal.innerHTML=`<section class="sheet quick-sheet"><div class="sheet-top"><h2>Ajouter</h2><button type="button" class="close" data-close>×</button></div><button class="add-choice" data-choice="event"><span class="plan-badge">□</span><span><strong>Créneau de planning</strong><small>Travail, congé ou rendez-vous</small></span></button><button class="add-choice" data-choice="est"><span class="est-badge">⌂</span><span><strong>Établissement</strong><small>Avec son annuaire téléphonique</small></span></button><button class="add-choice" data-choice="med"><span class="med-badge">●</span><span><strong>Fiche médicament</strong><small>Indication, vigilance et posologie</small></span></button></section>`;document.body.append(modal);modal.querySelector('[data-close]').onclick=()=>modal.remove();modal.querySelectorAll('[data-choice]').forEach(button=>button.onclick=()=>{const choice=button.dataset.choice;modal.remove();if(choice==='event')eventForm();if(choice==='est')establishmentForm();if(choice==='med')medForm();});
 }
 function bind(){
-  document.querySelectorAll('[data-go]').forEach(button=>button.onclick=()=>{const target=button.dataset.go;if(target==='home')home();else if(target==='meds')meds();else if(target==='establishments')establishments();else if(target==='planning')planning();else if(target==='search')searchPage();else if(target==='profile')profile();else if(['languages','protocols','notes','surgery','pediatrics','emergencies'].includes(target))resourcePage(target);});
+  document.querySelectorAll('[data-go]').forEach(button=>button.onclick=()=>{const target=button.dataset.go;if(target==='home')home();else if(target==='meds')meds();else if(target==='establishments')establishments();else if(target==='planning')planning();else if(target==='search')searchPage();else if(target==='profile')profile();else if(target==='surgery')surgery();else if(target==='surgery-specialty')surgery();else if(['languages','protocols','notes','pediatrics','emergencies'].includes(target))resourcePage(target);});
   document.querySelectorAll('[data-med]').forEach(button=>button.onclick=()=>medDetail(button.dataset.med));
   document.querySelectorAll('[data-est]').forEach(button=>button.onclick=()=>establishmentDetail(button.dataset.est));
   document.querySelectorAll('[data-add-med]').forEach(button=>button.onclick=()=>medForm());
@@ -345,6 +406,12 @@ function bind(){
   document.querySelectorAll('[data-add-event]').forEach(button=>button.onclick=()=>eventForm());
   document.querySelectorAll('[data-add-event-date]').forEach(button=>button.onclick=()=>eventForm(null,button.dataset.addEventDate));
   document.querySelectorAll('[data-language]').forEach(button=>button.onclick=()=>languageDetail(button.dataset.language));
+  document.querySelectorAll('[data-surgery-specialty]').forEach(button=>button.onclick=()=>surgerySpecialty(button.dataset.surgerySpecialty));
+  document.querySelectorAll('[data-surgery-intervention]').forEach(button=>button.onclick=()=>{const [specialtyId,interventionId]=button.dataset.surgeryIntervention.split('|');surgeryInterventionDetail(specialtyId,interventionId);});
+  document.querySelectorAll('[data-add-surgery-specialty]').forEach(button=>button.onclick=()=>surgerySpecialtyForm());
+  document.querySelectorAll('[data-add-surgery-general]').forEach(button=>button.onclick=()=>surgeryGeneralForm(button.dataset.addSurgeryGeneral));
+  document.querySelectorAll('[data-add-surgery-intervention]').forEach(button=>button.onclick=()=>surgeryInterventionForm(button.dataset.addSurgeryIntervention));
+  document.querySelectorAll('[data-surgery-legacy]').forEach(button=>button.onclick=surgeryLegacy);
   document.querySelectorAll('[data-add-resource]').forEach(button=>button.onclick=()=>resourceForm(button.dataset.addResource));
   document.querySelectorAll('[data-add-language-note]').forEach(button=>button.onclick=()=>languageNoteForm(button.dataset.addLanguageNote));
   document.querySelectorAll('[data-day]').forEach(button=>button.onclick=()=>planning(button.dataset.day.slice(0,7),button.dataset.day));
@@ -363,6 +430,6 @@ document.addEventListener('contextmenu',event=>{
 if('serviceWorker' in navigator){
   let refreshing=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;window.location.reload();}});
-  navigator.serviceWorker.register('sw.js?v=24',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=26',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
 }
 home();
