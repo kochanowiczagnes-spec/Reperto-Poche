@@ -28,3 +28,6 @@ input,textarea,select{-webkit-user-select:text;user-select:text;-webkit-touch-ca
 .surgery-intervention-item .item-main h2{margin:0}
 .surgery-general-list .detail-card{margin-bottom:0}
 .surgery-interventions-head{margin-top:23px}
+
+/* Anesthésies v27 : même structure que Chirurgies, terrain du patient en premier. */
+.anesthesia:before{background:#f4eafa}.anesthesia .icon{background:#f1e5f8;color:#8f62bd}.anesthesia-icon{background:#f5ecfa;color:#8f62bd}.anesthesia-fiche-item{padding:16px 15px}.anesthesia-fiche-item .item-main h2{margin:0}.anesthesia-general-list .detail-card{margin-bottom:0}.anesthesia-fiches-head{margin-top:23px}
