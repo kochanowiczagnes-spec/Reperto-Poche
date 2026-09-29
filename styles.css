@@ -31,3 +31,6 @@ input,textarea,select{-webkit-user-select:text;user-select:text;-webkit-touch-ca
 
 /* Anesthésies v27 : même structure que Chirurgies, terrain du patient en premier. */
 .anesthesia:before{background:#f4eafa}.anesthesia .icon{background:#f1e5f8;color:#8f62bd}.anesthesia-icon{background:#f5ecfa;color:#8f62bd}.anesthesia-fiche-item{padding:16px 15px}.anesthesia-fiche-item .item-main h2{margin:0}.anesthesia-general-list .detail-card{margin-bottom:0}.anesthesia-fiches-head{margin-top:23px}
+
+/* v28 — accès explicite aux repères de chirurgie précédents. */
+.legacy-block{margin-top:10px}.legacy-clear{display:block;width:calc(100% - 12px);margin:8px 6px 0;border:1px solid #edb7bb;border-radius:12px;padding:12px 14px;background:#fff7f6;color:#a23d48;font:700 13px/1.2 inherit;text-align:left}.legacy-clear-page{width:100%;margin:16px 0}.legacy-entry{display:flex;gap:12px;align-items:flex-start}.legacy-entry>div{flex:1;min-width:0}.inline-delete{flex:0 0 auto;border:1px solid #edb7bb;background:#fff7f6;color:#a23d48;border-radius:10px;padding:9px 10px;font:700 12px/1 inherit}

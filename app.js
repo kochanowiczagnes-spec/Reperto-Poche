@@ -232,7 +232,7 @@ function anesthesiaSearchSection(query){
 function surgery(){
   const specialties=[...getSurgerySpecialties()].sort(sortByName), legacy=get('rp-surgery', surgeryDefaults);
   const cards=specialties.length?specialties.map(item=>{const count=(item.interventions||[]).length;return `<button class="item" data-surgery-specialty="${item.id}" data-hold="surgery-specialty|${item.id}" aria-label="${escape(item.name)}. Toucher pour ouvrir, maintenir pour modifier ou supprimer."><span class="item-icon surgery-icon">✚</span><span class="item-main"><h2>${escape(item.name)}</h2><p>${count} intervention${count>1?'s':''}</p></span><span class="chev">›</span></button>`;}).join(''):empty('Ajoute une spécialité pour classer tes interventions.');
-  const legacyCard=legacy.length?`<button class="legacy-surgery" data-surgery-legacy><span>↗</span><span><strong>Repères de chirurgie précédents</strong><small>${legacy.length} repère${legacy.length>1?'s':''} conservé${legacy.length>1?'s':''}</small></span><span class="chev">›</span></button>`:'';
+  const legacyCard=legacy.length?`<section class="legacy-block"><button class="legacy-surgery" data-surgery-legacy><span>↗</span><span><strong>Repères de chirurgie précédents</strong><small>${legacy.length} repère${legacy.length>1?'s':''} conservé${legacy.length>1?'s':''}</small></span><span class="chev">›</span></button><button class="legacy-clear" data-clear-legacy-surgery>Supprimer les ${legacy.length} repère${legacy.length>1?'s':''} précédent${legacy.length>1?'s':''}</button></section>`:'';
   app.innerHTML=`${topbar()}${sectionTitle('Chirurgies',`${specialties.length} spécialité${specialties.length>1?'s':''}`,'home')}<p class="helper">Touche une spécialité pour consulter ses fiches. Maintiens une spécialité ou une intervention pour la modifier ou la supprimer.</p><section class="list surgery-list">${cards}</section>${legacyCard}<button class="fab" data-add-surgery-specialty aria-label="Ajouter une spécialité">+</button>${nav()}`;
   bind();
 }
@@ -264,7 +264,12 @@ function surgeryInterventionForm(specialtyId, existing){
   const intervention=existing||{name:'',duration:'',position:'',equipment:'',products:'',antibioprophylaxis:'no',antibiotic:'',notes:''};
   openSheet(`${existing?'Modifier':'Nouvelle'} intervention — ${escape(specialty.name)}`, `<div class="field"><label>Nom de l’intervention</label><input required name="name" value="${escape(intervention.name)}" placeholder="Ex. Prothèse totale de hanche"></div><div class="field"><label>Durée habituelle</label><input name="duration" value="${escape(intervention.duration)}" placeholder="Ex. 1 h 30"></div><div class="field"><label>Position sur table</label><textarea name="position" placeholder="Ex. Décubitus dorsal, bras…">${escape(intervention.position)}</textarea></div><div class="field"><label>Équipements</label><textarea name="equipment" placeholder="Installation, matériel, monitorage…">${escape(intervention.equipment)}</textarea></div><div class="field"><label>Drogues / produits</label><textarea name="products" placeholder="À vérifier selon protocole local et prescription.">${escape(intervention.products)}</textarea></div><div class="field"><label>Antibioprophylaxie</label><select name="antibioprophylaxis"><option value="no" ${intervention.antibioprophylaxis!=='yes'?'selected':''}>Non</option><option value="yes" ${intervention.antibioprophylaxis==='yes'?'selected':''}>Oui</option></select></div><div class="field"><label>Antibiotique si oui</label><input name="antibiotic" value="${escape(intervention.antibiotic)}" placeholder="À vérifier selon protocole local"></div><div class="field"><label>Remarques et repères importants</label><textarea name="notes" placeholder="Points de vigilance, transmissions, repères…">${escape(intervention.notes)}</textarea></div><p class="sheet-intro">Cette fiche personnelle ne remplace pas le protocole local, la prescription ni l’évaluation du patient.</p>`, values=>{if(values.antibioprophylaxis!=='yes')values.antibiotic='';const list=getSurgerySpecialties().map(item=>{if(item.id!==specialtyId)return item;const interventions=item.interventions||[];return {...item,interventions:existing?interventions.map(entry=>entry.id===existing.id?{...entry,...values}:entry):[...interventions,{id:uid('intervention'),...values}]};});setSurgerySpecialties(list);surgerySpecialty(specialtyId);toast('Intervention enregistrée sur cet iPhone');});
 }
-function surgeryLegacy(){resourcePage('surgery');}
+function surgeryLegacy(){
+  const entries=get('rp-surgery',surgeryDefaults);
+  const rows=entries.length?entries.map(item=>`<article class="detail-card legacy-entry"><div><h2>${escape(item.title)}</h2><p class="multiline">${escape(item.text||'À compléter.')}</p></div><button class="inline-delete" data-delete-legacy-surgery="${item.id}" aria-label="Supprimer ${escape(item.title)}">Supprimer</button></article>`).join(''):empty('Aucun ancien repère de chirurgie.');
+  app.innerHTML=`${topbar()}${sectionTitle('Repères précédents','Chirurgies','surgery')}<p class="helper">Ces anciens repères sont séparés des nouvelles spécialités. Tu peux les retirer ici, un par un, ou tous à la fois.</p><section class="list legacy-list">${rows}</section>${entries.length?`<button class="legacy-clear legacy-clear-page" data-clear-legacy-surgery>Supprimer tous les repères précédents</button>`:''}${nav()}`;
+  bind();
+}
 function surgerySearchSection(query){
   const contains=value=>searchText(value).includes(searchText(query));
   const found=getSurgerySpecialties().flatMap(specialty=>(specialty.interventions||[]).filter(item=>contains(`${specialty.name} ${(generalitiesOf(specialty)||[]).map(note=>`${note.title} ${note.text}`).join(' ')} ${item.name} ${item.duration} ${item.position} ${item.equipment} ${item.products} ${item.antibiotic} ${item.notes}`)).map(item=>({specialty,item})));
@@ -464,6 +469,8 @@ function bind(){
   document.querySelectorAll('[data-add-surgery-general]').forEach(button=>button.onclick=()=>surgeryGeneralForm(button.dataset.addSurgeryGeneral));
   document.querySelectorAll('[data-add-surgery-intervention]').forEach(button=>button.onclick=()=>surgeryInterventionForm(button.dataset.addSurgeryIntervention));
   document.querySelectorAll('[data-surgery-legacy]').forEach(button=>button.onclick=surgeryLegacy);
+  document.querySelectorAll('[data-delete-legacy-surgery]').forEach(button=>button.onclick=()=>{const item=get('rp-surgery',surgeryDefaults).find(entry=>entry.id===button.dataset.deleteLegacySurgery);if(!item)return;surgeryLegacy();deleteEntry('ce repère précédent',()=>{set('rp-surgery',get('rp-surgery',surgeryDefaults).filter(entry=>entry.id!==item.id));surgeryLegacy();});});
+  document.querySelectorAll('[data-clear-legacy-surgery]').forEach(button=>button.onclick=()=>deleteEntry('tous les repères de chirurgie précédents',()=>{set('rp-surgery',[]);surgery();}));
   document.querySelectorAll('[data-add-resource]').forEach(button=>button.onclick=()=>resourceForm(button.dataset.addResource));
   document.querySelectorAll('[data-add-language-note]').forEach(button=>button.onclick=()=>languageNoteForm(button.dataset.addLanguageNote));
   document.querySelectorAll('[data-day]').forEach(button=>button.onclick=()=>planning(button.dataset.day.slice(0,7),button.dataset.day));
@@ -482,6 +489,6 @@ document.addEventListener('contextmenu',event=>{
 if('serviceWorker' in navigator){
   let refreshing=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;window.location.reload();}});
-  navigator.serviceWorker.register('sw.js?v=27',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=28',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
 }
 home();
