@@ -1,0 +1,23 @@
+RÉPERTO’POCHE — DOSSIER DE PREUVE POUR DÉPÔT e‑SOLEAU
+Version fonctionnelle documentée : v20
+Date de préparation : 28 septembre 2026
+
+OBJECTIF
+Ce dossier est préparé afin de dater l’existence des éléments originaux de Réperto’Poche : application web installable, interface, identité visuelle, code source, textes et documents de conception.
+
+DÉPOSANTE
+Agnès Kochanowicz
+Les coordonnées personnelles et la qualité de déposante doivent être renseignées directement dans le portail e‑Soleau de l’INPI. Elles ne sont pas répétées dans les fichiers joints.
+
+CE QUI EST DÉPOSÉ
+- NOTE_DE_CREATION_REPERTO_POCHE.pdf : présentation synthétique de la création, de son identité visuelle, de ses fonctionnalités et de son périmètre ;
+- apercu-accueil.png : aperçu visuel mobile de l’interface ;
+- assets/ : logo et icônes utilisés par l’application ;
+- code-source-v20/ : version complète du code source et des ressources de l’application ;
+- INVENTAIRE_ET_EMPREINTES_SHA256.txt : liste exacte des fichiers et empreintes de contrôle.
+
+DÉCLARATION À RELIRE AVANT DÉPÔT
+Les éléments du dossier sont déposés en tant qu’éléments de création et de preuve d’antériorité. Le dépôt e‑Soleau date un contenu ; il ne constitue ni un dépôt de marque, ni un brevet, ni une cession de droits.
+
+IMPORTANT
+Ne joindre aucun fichier contenant des données de patient, informations personnelles de testeuses, identifiants, mots de passe ou clés techniques.

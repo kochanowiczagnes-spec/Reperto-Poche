@@ -1,4 +1,4 @@
-RÉPERTO’POCHE — MISE À JOUR v33
+RÉPERTO’POCHE — MISE À JOUR v35
 
 Application web installable (PWA) pour iPhone, iPad et Mac.
 
@@ -10,6 +10,13 @@ CORRECTIONS DE CETTE VERSION
 - les photos provenant de l’iPhone sont acceptées jusqu’à 20 Mo, puis réduites automatiquement avant l’enregistrement ; les autres fichiers restent limités à 2 Mo ;
 - les rubriques Protocoles, Langues étrangères et Notes rapides s’ouvrent correctement ;
 - une nouvelle version de cache force l’actualisation de l’application après publication.
+
+RÉMUNÉRATION INTÉRIM — v35
+- un taux horaire renseigné en brut pour un établissement « Intérim » est maintenant converti en net estimé avant prélèvement à la source ;
+- le coefficient par défaut est 79,90 % (20,10 % de cotisations salariales constatées sur les bulletins analysés) ;
+- la majoration forfaitaire de 20 % est appliquée au brut avant cette conversion ;
+- le coefficient 79,90 % reste modifiable dans les réglages de chaque établissement et ne s’applique jamais aux vacations directes ;
+- le prélèvement à la source n’est pas calculé ni affiché.
 
 DONNÉES PRÉSERVÉES
 Les six collections locales existantes (médicaments, établissements, planning, langues, protocoles et notes) ne sont ni supprimées ni migrées. Les données créées restent enregistrées uniquement sur l’appareil.
