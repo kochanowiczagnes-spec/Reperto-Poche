@@ -1,0 +1,6 @@
+RÉPERTO’POCHE v47.1
+
+Correctif Planning et actualisation du cache iPhone/Safari.
+
+À mettre à la racine du dépôt GitHub : index.html, app.js, styles.css, sw.js, manifest.webmanifest et les icônes.
+Les données enregistrées sur l’iPhone ne sont pas modifiées.

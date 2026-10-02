@@ -552,7 +552,7 @@ document.addEventListener('contextmenu',event=>{
 if('serviceWorker' in navigator){
   let refreshing=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;window.location.reload();}});
-  navigator.serviceWorker.register('sw.js?v=47',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=47.1',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
 }
 async function startApp(){let moved=0;try{moved=await migrateLegacyAttachments();await cleanupOrphanAttachments();}catch(error){console.warn('Migration des fichiers',error);}home();if(moved)toast(`${moved} fichier${moved>1?'s':''} déplacé${moved>1?'s':''} vers le stockage étendu`);}
 startApp();
@@ -700,7 +700,7 @@ function remuneration(cursor=new Date().getFullYear()+'-'+String(new Date().getM
 }
 
 
-// V47 — Planning opérationnel : semaine, duplication, compteurs, filtres, alertes, disponibilités et recherche.
+// V47.1 — Planning opérationnel et correctif cache : semaine, duplication, compteurs, filtres, alertes, disponibilités et recherche.
 function rpIso(date){return date.toISOString().slice(0,10);}
 function rpAddDays(date,delta){const value=new Date(`${date}T12:00:00`);value.setDate(value.getDate()+delta);return rpIso(value);}
 function rpMonday(date){const value=new Date(`${date}T12:00:00`),weekday=(value.getDay()+6)%7;value.setDate(value.getDate()-weekday);return rpIso(value);}
