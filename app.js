@@ -816,3 +816,24 @@ function remuneration(cursor=new Date().getFullYear()+'-'+String(new Date().getM
  const head=document.querySelector('.section-head p');if(head)head.textContent='Résumé du mois : ouvre une ligne uniquement pour renseigner un versement.';
  const month=document.querySelector('.remuneration-month');if(month)month.setAttribute('aria-label','Changer de mois');
 }
+
+
+/* v50 — Retour fiable depuis une fiche de versement.
+   Le mois consulté est transmis explicitement au retour pour éviter un reset sur une journée du planning. */
+function remuneration(cursor=new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0'),tab='work'){
+  const normalized=/^\d{4}-(0[1-9]|1[0-2])$/.test(String(cursor||''))?cursor:(new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0'));
+  return rpV48Remuneration(normalized,tab==='payments'?'payments':'work');
+}
+function paymentForm(event,cursor,returnTab='work'){
+  const month=/^\d{4}-(0[1-9]|1[0-2])$/.test(String(cursor||''))?cursor:(event?eventStart(event).slice(0,7):new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0'));
+  const tab=returnTab==='payments'?'payments':'work';
+  if(!event){remuneration(month,tab);return;}
+  if(window.rpLiveTicker){window.clearInterval(window.rpLiveTicker);window.rpLiveTicker=null;}
+  const payment=rpPayment(event),estimate=rpEstimate(event),amount=payment.amount===null?'':String(payment.amount).replace('.',',');
+  app.innerHTML=`${topbar()}${sectionTitle('Modifier le versement',escape(event.title||'Mission'),'remuneration')}<section class="payment-sheet-summary payment-editor-summary"><strong>${escape(event.place||'Établissement à préciser')}</strong><p>${rpDateLong(eventStart(event))}</p><small>Estimation de la mission : <b>${rpMoney(estimate)}</b></small></section><form class="payment-editor" data-payment-editor><div class="field"><label>Montant versé ou prévu</label><input type="number" min="0" step="0.01" inputmode="decimal" name="paymentAmount" value="${escape(amount)}" placeholder="Ex. 352,80"></div><div class="field"><label>Date de versement</label><input type="date" name="paymentDate" value="${escape(payment.date)}"></div><div class="field"><label>Statut</label><select name="paymentStatus"><option value="to-confirm" ${payment.status==='to-confirm'?'selected':''}>À confirmer</option><option value="expected" ${payment.status==='expected'?'selected':''}>Prévu</option><option value="received" ${payment.status==='received'?'selected':''}>Versé</option></select></div><div class="field"><label>Note <small>facultatif</small></label><textarea name="paymentNote" placeholder="Ex. Retenue à vérifier ou complément attendu">${escape(payment.note)}</textarea></div><p class="helper">Cette fiche ne modifie ni les horaires, ni le taux, ni l’estimation de la mission.</p><div class="payment-editor-actions"><button type="button" class="secondary-button" data-payment-cancel>Annuler sans enregistrer</button><button type="submit" class="primary">Enregistrer</button></div></form>${nav('planning')}`;
+  bind();
+  // La flèche du titre suit le même retour que le bouton Annuler : le mois consulté, jamais la date du jour.
+  document.querySelector('.section-head .back')?.addEventListener('click',event=>{event.preventDefault();remuneration(month,tab);});
+  document.querySelector('[data-payment-cancel]')?.addEventListener('click',()=>remuneration(month,tab));
+  document.querySelector('[data-payment-editor]')?.addEventListener('submit',eventSubmit=>{eventSubmit.preventDefault();const data=new FormData(eventSubmit.currentTarget),raw=String(data.get('paymentAmount')||'').trim(),paymentAmount=raw===''?null:Math.max(0,Number(raw.replace(',','.'))||0);setPlanning(getPlanning().map(item=>item.id===event.id?{...item,paymentAmount,paymentDate:String(data.get('paymentDate')||''),paymentStatus:String(data.get('paymentStatus')||'to-confirm'),paymentNote:String(data.get('paymentNote')||'')}:item));remuneration(month,tab);toast(String(data.get('paymentStatus'))==='received'?'Versement enregistré':'Versement mis à jour');});
+}
