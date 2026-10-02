@@ -85,3 +85,7 @@ input,textarea,select{-webkit-user-select:text;user-select:text;-webkit-touch-ca
 
 /* v47.3 — sortie toujours visible, sans sauvegarde */
 .sheet-cancel{width:100%;border:1px solid var(--line);border-radius:13px;background:#fff;color:var(--navy);padding:14px;margin-top:14px;font:700 16px inherit;touch-action:manipulation;-webkit-tap-highlight-color:transparent}.sheet-cancel:active{background:#f4eee4}
+
+
+/* v48 — édition sur une page, sans fenêtre bloquante */
+.payment-editor{padding-bottom:24px}.payment-editor-summary{margin:0 0 14px}.payment-editor-actions{display:grid;gap:10px;margin:20px 0 12px}.payment-editor-actions .secondary-button,.payment-editor-actions .primary{width:100%;min-height:48px}.payment-editor-actions .secondary-button{background:#fff;color:var(--navy);border:1px solid var(--line)}
