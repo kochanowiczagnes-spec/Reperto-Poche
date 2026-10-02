@@ -126,7 +126,6 @@ const logo = () => '<div class="brand"><i class="logo" aria-hidden="true"></i><s
 const nav = (active='home') => `<nav class="nav" aria-label="Navigation principale">
   <button class="${active==='home'?'active':''}" data-go="home"><span>⌂</span>Accueil</button>
   <button class="${active==='search'?'active':''}" data-go="search"><span>⌕</span>Recherche</button>
-  <button class="nav-add" data-add-menu aria-label="Ajouter">+</button>
   <button class="${active==='planning'?'active':''}" data-go="planning"><span>▣</span>Planning</button>
 </nav>`;
 const topbar = () => `<header class="top">${logo()}<button class="avatar ${profileFirstName()?'has-name':'neutral'}" data-go="profile" aria-label="Mon profil">${profileInitial()}</button></header>`;
@@ -480,9 +479,6 @@ function entryMenu(value){
   if(type==='language-note'){const languageId=parts[0],noteId=parts[1],language=get('rp-languages',languageDefaults).find(entry=>entry.id===languageId),item=language&&(language.entries||[]).find(entry=>entry.id===noteId);if(!item)return;return menuSheet(item.title,[{id:'edit',label:'Modifier',hint:'Ouvrir cette note',icon:'✎',action:()=>languageNoteForm(languageId,item)},{id:'delete',label:'Supprimer',hint:'Retirer cette note',icon:'×',danger:true,action:()=>deleteEntry('cette note',()=>{set('rp-languages',get('rp-languages',languageDefaults).map(entry=>entry.id===languageId?{...entry,entries:(entry.entries||[]).filter(note=>note.id!==noteId)}:entry));languageDetail(languageId);})}]);}
 }
 function bindHold(){document.querySelectorAll('[data-hold]').forEach(element=>{let timer;let held=false;const stop=()=>{clearTimeout(timer);};element.addEventListener('pointerdown',()=>{held=false;timer=setTimeout(()=>{held=true;entryMenu(element.dataset.hold);},650);});element.addEventListener('pointerup',stop);element.addEventListener('pointerleave',stop);element.addEventListener('pointercancel',stop);element.addEventListener('click',event=>{if(held){event.preventDefault();event.stopImmediatePropagation();held=false;}},true);element.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();entryMenu(element.dataset.hold);}});});}
-function addMenu(){
-  const modal=document.createElement('div');modal.className='modal menu-modal';modal.innerHTML=`<section class="sheet quick-sheet"><div class="sheet-top"><h2>Ajouter</h2><button type="button" class="close" data-close>×</button></div><button class="add-choice" data-choice="event"><span class="plan-badge">□</span><span><strong>Créneau de planning</strong><small>Travail, congé ou rendez-vous</small></span></button><button class="add-choice" data-choice="est"><span class="est-badge">⌂</span><span><strong>Établissement</strong><small>Avec son annuaire téléphonique</small></span></button><button class="add-choice" data-choice="med"><span class="med-badge">●</span><span><strong>Fiche médicament</strong><small>Indication, vigilance et posologie</small></span></button></section>`;document.body.append(modal);modal.querySelector('[data-close]').onclick=()=>modal.remove();modal.querySelectorAll('[data-choice]').forEach(button=>button.onclick=()=>{const choice=button.dataset.choice;modal.remove();if(choice==='event')eventForm();if(choice==='est')establishmentForm();if(choice==='med')medForm();});
-}
 function bind(){
   document.querySelectorAll('[data-go]').forEach(button=>button.onclick=()=>{const target=button.dataset.go;if(target==='home')home();else if(target==='meds')meds();else if(target==='establishments')establishments();else if(target==='planning')planning();else if(target==='search')searchPage();else if(target==='profile')profile();else if(target==='surgery')surgery();else if(target==='surgery-specialty')surgery();else if(target==='anesthesia')anesthesia();else if(target==='anesthesia-terrain')anesthesia();else if(['languages','protocols','notes','pediatrics','emergencies'].includes(target))resourcePage(target);});
   document.querySelectorAll('[data-med]').forEach(button=>button.onclick=()=>medDetail(button.dataset.med));
@@ -518,7 +514,6 @@ function bind(){
   document.querySelectorAll('[data-day]').forEach(button=>button.onclick=()=>planning(button.dataset.day.slice(0,7),button.dataset.day));
   document.querySelectorAll('[data-today]').forEach(button=>button.onclick=()=>{const today=new Date().toISOString().slice(0,10);planning(today.slice(0,7),today);});
   document.querySelectorAll('[data-month]').forEach(button=>button.onclick=()=>planning(button.dataset.month));
-  document.querySelectorAll('[data-add-menu]').forEach(button=>button.onclick=addMenu);
   document.querySelectorAll('[data-backup-export]').forEach(button=>button.onclick=downloadBackup);
   document.querySelectorAll('[data-backup-import]').forEach(button=>button.onclick=chooseBackup);
   document.querySelectorAll('[data-attachment-open]').forEach(link=>link.addEventListener('click',openAttachment));
@@ -531,7 +526,7 @@ document.addEventListener('contextmenu',event=>{
 if('serviceWorker' in navigator){
   let refreshing=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;window.location.reload();}});
-  navigator.serviceWorker.register('sw.js?v=41',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=42',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
 }
 async function startApp(){let moved=0;try{moved=await migrateLegacyAttachments();await cleanupOrphanAttachments();}catch(error){console.warn('Migration des fichiers',error);}home();if(moved)toast(`${moved} fichier${moved>1?'s':''} déplacé${moved>1?'s':''} vers le stockage étendu`);}
 startApp();
