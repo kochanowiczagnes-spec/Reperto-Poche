@@ -1,5 +1,5 @@
-const CACHE='reperto-poche-v48.0';
-const ASSETS=['./','./index.html','./styles.css?v=48.0','./app.js?v=48.0','./manifest.webmanifest?v=48.0','./icon-192.png?v=48.0','./icon-512.png?v=48.0','./apple-touch-icon.png?v=48.0'];
+const CACHE='reperto-poche-v49.0';
+const ASSETS=['./','./index.html','./styles.css?v=49.0','./app.js?v=49.0','./manifest.webmanifest?v=49.0','./icon-192.png?v=49.0','./icon-512.png?v=49.0','./apple-touch-icon.png?v=49.0'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('reperto-poche-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{

@@ -89,3 +89,7 @@ input,textarea,select{-webkit-user-select:text;user-select:text;-webkit-touch-ca
 
 /* v48 — édition sur une page, sans fenêtre bloquante */
 .payment-editor{padding-bottom:24px}.payment-editor-summary{margin:0 0 14px}.payment-editor-actions{display:grid;gap:10px;margin:20px 0 12px}.payment-editor-actions .secondary-button,.payment-editor-actions .primary{width:100%;min-height:48px}.payment-editor-actions .secondary-button{background:#fff;color:var(--navy);border:1px solid var(--line)}
+
+
+/* v49 — réglages explicites et formulaires en page */
+.event-editor,.payment-editor{padding-bottom:26px}.pay-setup-intro{display:flex;align-items:center;gap:12px;background:#f0fbfa;border:1px solid #d3eeeb;padding:14px;border-radius:16px;margin:0 0 12px}.pay-setup-intro p{margin:3px 0 0;color:var(--muted);font-size:13px}.mode-switch{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0}.mode-switch button{border:1px solid var(--line);background:#fff;border-radius:12px;padding:11px 7px;font-weight:700;color:var(--muted)}.mode-switch button.active{background:#24324a;color:#fff;border-color:#24324a}.remuneration-profiles{display:grid;gap:10px}.pay-profile-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:10px;border-top:1px solid var(--line)}.pay-profile-row div{display:grid;gap:3px;min-width:0}.pay-profile-row small{color:var(--muted);font-size:12px}.pay-profile-row .secondary-button{margin:0;white-space:nowrap;padding:9px 12px}.event-editor .field,.payment-editor .field{margin:13px 0}
