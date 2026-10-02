@@ -837,3 +837,26 @@ function paymentForm(event,cursor,returnTab='work'){
   document.querySelector('[data-payment-cancel]')?.addEventListener('click',()=>remuneration(month,tab));
   document.querySelector('[data-payment-editor]')?.addEventListener('submit',eventSubmit=>{eventSubmit.preventDefault();const data=new FormData(eventSubmit.currentTarget),raw=String(data.get('paymentAmount')||'').trim(),paymentAmount=raw===''?null:Math.max(0,Number(raw.replace(',','.'))||0);setPlanning(getPlanning().map(item=>item.id===event.id?{...item,paymentAmount,paymentDate:String(data.get('paymentDate')||''),paymentStatus:String(data.get('paymentStatus')||'to-confirm'),paymentNote:String(data.get('paymentNote')||'')}:item));remuneration(month,tab);toast(String(data.get('paymentStatus'))==='received'?'Versement enregistré':'Versement mis à jour');});
 }
+
+
+/* v51 — Rémunération : écran mensuel direct et autonome.
+   Le récapitulatif ne dépend plus de l'ancien parcours de planning. */
+function remuneration(cursor=new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0'),tab='work'){
+  if(window.rpLiveTicker){window.clearInterval(window.rpLiveTicker);window.rpLiveTicker=null;}
+  const month=/^\d{4}-(0[1-9]|1[0-2])$/.test(String(cursor||''))?String(cursor):(new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0'));
+  const currentTab=tab==='payments'?'payments':'work';
+  const [year,monthNumber]=month.split('-').map(Number),previous=new Date(year,monthNumber-2,1),next=new Date(year,monthNumber,1);
+  const events=rpMonthEvents(month),workTotal=events.reduce((total,event)=>total+rpWorkInMonth(event,month),0),paidMinutes=events.reduce((total,event)=>total+rpPaidMinutes(event)*rpDaysInMonth(event,month),0);
+  const workRows=events.length?events.map(event=>rpWorkRow(event,month)).join(''):empty('Aucune mission de travail ce mois-ci.');
+  const dated=getPlanning().filter(event=>event.type==='work'&&rpPaymentMonth(event)===month).sort((a,b)=>rpPayment(a).date.localeCompare(rpPayment(b).date));
+  const incoming=dated.filter(event=>rpPayment(event).status!=='received'),received=dated.filter(event=>rpPayment(event).status==='received');
+  const expectedTotal=incoming.reduce((total,event)=>total+rpPaymentAmount(event),0),receivedTotal=received.reduce((total,event)=>total+rpPaymentAmount(event),0);
+  const tabs=`<div class="pay-tabs" role="tablist"><button class="${currentTab==='work'?'active':''}" data-v51-tab="work">Travail effectué</button><button class="${currentTab==='payments'?'active':''}" data-v51-tab="payments">Versements attendus</button></div>`;
+  const work=`<section class="pay-hero work-total"><p>Travail de ${rpMonthTitle(month)}</p><strong>${rpMoney(workTotal)}</strong><small>${events.length} mission${events.length>1?'s':''} · ${durationLabel(paidMinutes)} payées</small></section><section class="pay-section"><div class="pay-section-head"><div><h2>Détail des missions</h2><p>Touche une mission pour renseigner son versement.</p></div></div>${workRows}</section>`;
+  const payments=`<section class="pay-hero payment-total"><p>Versements de ${rpMonthTitle(month)}</p><strong>${rpMoney(expectedTotal+receivedTotal)}</strong><small>${dated.length} versement${dated.length>1?'s':''} daté${dated.length>1?'s':''}</small></section>${incoming.length?`<section class="pay-section"><div class="pay-section-head"><div><h2>À venir</h2><p>${rpMoney(expectedTotal)} prévu</p></div></div>${incoming.map(event=>rpPaymentRow(event,month)).join('')}</section>`:''}${received.length?`<section class="pay-section"><div class="pay-section-head"><div><h2>Versés</h2><p>${rpMoney(receivedTotal)} reçu</p></div></div>${received.map(event=>rpPaymentRow(event,month)).join('')}</section>`:''}${!dated.length?empty('Aucun versement daté ce mois-ci.'):''}<p class="pay-footnote">Les estimations de travail restent séparées des montants réellement versés.</p>`;
+  app.innerHTML=`${topbar()}${sectionTitle('Rémunération',`Résumé du mois — ${rpMonthTitle(month)}`,'planning')}<div class="remuneration-month"><button class="month-nav" data-v51-month="${previous.getFullYear()}-${String(previous.getMonth()+1).padStart(2,'0')}" aria-label="Mois précédent">‹</button><strong>${rpMonthTitle(month)}</strong><button class="month-nav" data-v51-month="${next.getFullYear()}-${String(next.getMonth()+1).padStart(2,'0')}" aria-label="Mois suivant">›</button></div>${tabs}${currentTab==='payments'?payments:work}${nav('planning')}`;
+  bind();
+  document.querySelectorAll('[data-v51-month]').forEach(button=>button.onclick=()=>remuneration(button.dataset.v51Month,currentTab));
+  document.querySelectorAll('[data-v51-tab]').forEach(button=>button.onclick=()=>remuneration(month,button.dataset.v51Tab));
+  document.querySelectorAll('[data-edit-payment]').forEach(button=>button.onclick=()=>paymentForm(getPlanning().find(event=>event.id===button.dataset.editPayment),month,currentTab));
+}
