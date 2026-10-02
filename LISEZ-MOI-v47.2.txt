@@ -1,0 +1,6 @@
+RÉPERTO’POCHE v47.2
+
+Correctif : la croix × ferme désormais les fenêtres sans enregistrer, y compris sur iPhone.
+
+À publier à la racine du dépôt : index.html, app.js, styles.css, sw.js, manifest.webmanifest et les icônes.
+Les données enregistrées sur l’iPhone ne sont pas modifiées.

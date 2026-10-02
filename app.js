@@ -467,7 +467,16 @@ function eventForm(existing,date=''){
  openSheet(`${existing?'Modifier':'Nouveau'} créneau`, `<p class="sheet-intro">Une garde peut couvrir une ou plusieurs dates. Les horaires seront appliqués à chaque journée de la plage.</p><div class="date-fields"><div class="field"><label>Du</label><input required type="date" name="startDate" value="${escape(first)}"></div><div class="field"><label>Au</label><input required type="date" name="endDate" value="${escape(last)}"></div></div><div class="field"><label>Type</label><select name="type"><option value="work" ${planned.type==='work'?'selected':''}>Travail</option><option value="leave" ${planned.type==='leave'?'selected':''}>Indisponible / congé</option><option value="personal" ${planned.type==='personal'?'selected':''}>Personnel</option></select></div><div class="field"><label>Intitulé</label><input required name="title" value="${escape(planned.title)}" placeholder="Ex. Vacation IADE"></div><div class="field"><label>Établissement / lieu</label><input name="place" value="${escape(planned.place)}" placeholder="Ex. Centre hospitalier"></div><div class="time-fields"><div class="field"><label>Début</label><input type="text" name="start" inputmode="numeric" autocomplete="off" maxlength="5" value="${escape(planned.start)}" placeholder="Ex. 07:30"></div><div class="field"><label>Fin</label><input type="text" name="end" inputmode="numeric" autocomplete="off" maxlength="5" value="${escape(planned.end)}" placeholder="Ex. 18:00"></div></div><p class="helper">Saisis l’horaire au clavier : 0730 devient 07:30. Une fin après minuit est acceptée.</p><div class="field"><label>Note</label><textarea name="note" placeholder="Service, repère, rappel…">${escape(planned.note)}</textarea></div>${attachmentInput(planned.attachment)}`,withAttachment(planned,values=>{values.start=formatTime(values.start);values.end=formatTime(values.end);if(values.endDate<values.startDate)values.endDate=values.startDate;let list=getPlanning();if(existing)list=list.map(item=>item.id===existing.id?{...item,...values}:item);else list.push({id:uid('event'),...values});setPlanning(list);planning(values.startDate.slice(0,7),values.startDate);toast(values.attachment?'Créneau et fichier enregistrés':'Créneau enregistré sur cet iPhone');}));
 }
 function openSheet(title, body, onSave){
-  const modal=document.createElement('div');modal.className='modal';modal.innerHTML=`<form class="sheet"><div class="sheet-top"><h2>${title}</h2><button type="button" class="close" data-close>×</button></div>${body}<button class="primary">Enregistrer</button></form>`;document.body.append(modal);modal.querySelector('[data-close]').onclick=()=>modal.remove();modal.querySelector('form').onsubmit=async e=>{e.preventDefault();try{const form=e.target,data=new FormData(form),values=Object.fromEntries(data);if(form.querySelector('[name="tags"]'))values.tags=data.getAll('tags');form.querySelectorAll('input[type="file"][multiple]').forEach(input=>values[input.name]=input.files);await onSave(values);modal.remove();}catch(error){console.warn(error);}};
+  const modal=document.createElement('div');
+  modal.className='modal';
+  modal.innerHTML=`<form class="sheet"><div class="sheet-top"><h2>${title}</h2><button type="button" class="close" data-close aria-label="Fermer sans enregistrer">×</button></div>${body}<button class="primary">Enregistrer</button></form>`;
+  document.body.append(modal);
+  const close=()=>modal.remove(),closeButton=modal.querySelector('[data-close]');
+  // iOS can occasionally swallow a simple onclick inside a scrollable form: handle touch/pointer and keyboard explicitly.
+  ['pointerup','touchend','click'].forEach(type=>closeButton.addEventListener(type,event=>{event.preventDefault();event.stopPropagation();close();},{passive:false}));
+  closeButton.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();close();}});
+  modal.addEventListener('pointerup',event=>{if(event.target===modal)close();});
+  modal.querySelector('form').onsubmit=async e=>{e.preventDefault();try{const form=e.target,data=new FormData(form),values=Object.fromEntries(data);if(form.querySelector('[name="tags"]'))values.tags=data.getAll('tags');form.querySelectorAll('input[type="file"][multiple]').forEach(input=>values[input.name]=input.files);await onSave(values);modal.remove();}catch(error){console.warn(error);}};
 }
 function resourceForm(kind, existing){
   const config=resourceConfig[kind]; if(!config)return;
@@ -552,7 +561,7 @@ document.addEventListener('contextmenu',event=>{
 if('serviceWorker' in navigator){
   let refreshing=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;window.location.reload();}});
-  navigator.serviceWorker.register('sw.js?v=47.1',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=47.2',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
 }
 async function startApp(){let moved=0;try{moved=await migrateLegacyAttachments();await cleanupOrphanAttachments();}catch(error){console.warn('Migration des fichiers',error);}home();if(moved)toast(`${moved} fichier${moved>1?'s':''} déplacé${moved>1?'s':''} vers le stockage étendu`);}
 startApp();
