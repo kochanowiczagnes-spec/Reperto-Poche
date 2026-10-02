@@ -1,0 +1,5 @@
+RÉPERTO’POCHE v47.3
+
+Correctif renforcé : fermeture des fenêtres par la croix × OU le grand bouton « Fermer sans enregistrer ». Ces deux actions ne sauvegardent rien.
+
+À publier à la racine du dépôt GitHub : remplacer tous les fichiers de l’archive.

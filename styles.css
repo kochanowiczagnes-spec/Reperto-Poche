@@ -82,3 +82,6 @@ input,textarea,select{-webkit-user-select:text;user-select:text;-webkit-touch-ca
 /* v47.2 — fermeture fiable des fenêtres sur iPhone */
 .close{position:relative;z-index:2;display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;min-width:44px;min-height:44px;line-height:1;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .close:active{transform:scale(.96);background:#f4eee4}
+
+/* v47.3 — sortie toujours visible, sans sauvegarde */
+.sheet-cancel{width:100%;border:1px solid var(--line);border-radius:13px;background:#fff;color:var(--navy);padding:14px;margin-top:14px;font:700 16px inherit;touch-action:manipulation;-webkit-tap-highlight-color:transparent}.sheet-cancel:active{background:#f4eee4}

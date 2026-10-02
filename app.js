@@ -469,13 +469,13 @@ function eventForm(existing,date=''){
 function openSheet(title, body, onSave){
   const modal=document.createElement('div');
   modal.className='modal';
-  modal.innerHTML=`<form class="sheet"><div class="sheet-top"><h2>${title}</h2><button type="button" class="close" data-close aria-label="Fermer sans enregistrer">×</button></div>${body}<button class="primary">Enregistrer</button></form>`;
+  modal.innerHTML=`<form class="sheet"><div class="sheet-top"><h2>${title}</h2><button type="button" class="close" data-close aria-label="Fermer sans enregistrer">×</button></div>${body}<button type="button" class="sheet-cancel" data-close>Fermer sans enregistrer</button><button class="primary">Enregistrer</button></form>`;
   document.body.append(modal);
-  const close=()=>modal.remove(),closeButton=modal.querySelector('[data-close]');
-  // iOS can occasionally swallow a simple onclick inside a scrollable form: handle touch/pointer and keyboard explicitly.
-  ['pointerup','touchend','click'].forEach(type=>closeButton.addEventListener(type,event=>{event.preventDefault();event.stopPropagation();close();},{passive:false}));
-  closeButton.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();close();}});
-  modal.addEventListener('pointerup',event=>{if(event.target===modal)close();});
+  const close=()=>{modal.remove();};
+  // One capture handler closes every [data-close] control before form or iOS scroll handling can interfere.
+  const closeFromEvent=event=>{if(!event.target.closest('[data-close]'))return;event.preventDefault();event.stopImmediatePropagation();close();};
+  ['pointerdown','touchstart','click'].forEach(type=>modal.addEventListener(type,closeFromEvent,{capture:true,passive:false}));
+  modal.addEventListener('pointerdown',event=>{if(event.target===modal)close();},{capture:true});
   modal.querySelector('form').onsubmit=async e=>{e.preventDefault();try{const form=e.target,data=new FormData(form),values=Object.fromEntries(data);if(form.querySelector('[name="tags"]'))values.tags=data.getAll('tags');form.querySelectorAll('input[type="file"][multiple]').forEach(input=>values[input.name]=input.files);await onSave(values);modal.remove();}catch(error){console.warn(error);}};
 }
 function resourceForm(kind, existing){
@@ -561,7 +561,7 @@ document.addEventListener('contextmenu',event=>{
 if('serviceWorker' in navigator){
   let refreshing=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;window.location.reload();}});
-  navigator.serviceWorker.register('sw.js?v=47.2',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=47.3',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
 }
 async function startApp(){let moved=0;try{moved=await migrateLegacyAttachments();await cleanupOrphanAttachments();}catch(error){console.warn('Migration des fichiers',error);}home();if(moved)toast(`${moved} fichier${moved>1?'s':''} déplacé${moved>1?'s':''} vers le stockage étendu`);}
 startApp();
