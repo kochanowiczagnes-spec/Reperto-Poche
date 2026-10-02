@@ -1,0 +1,7 @@
+CORRECTIF v47.1
+
+Le Planning peut désormais s'ouvrir lorsqu'aucune garde n'est enregistrée dans le mois affiché.
+Cause : le total estimé utilisait une réduction sans valeur initiale sur une liste vide.
+Correction : valeur de départ 0 €.
+
+Contrôles : syntaxe JavaScript validée.
