@@ -123,7 +123,7 @@ function validBackup(backup){
 }
 async function downloadBackup(){
   try{toast('Préparation de la sauvegarde…');const backup=await makeBackup(),stamp=new Date().toISOString().slice(0,10),blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),link=document.createElement('a');
-  link.href=url;link.download=`Reperto-Poche-sauvegarde-${stamp}.json`;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Sauvegarde téléchargée : garde-la dans Fichiers ou iCloud Drive');}catch(error){toast(error.message||'Sauvegarde impossible.');}
+  link.href=url;link.download=`Reperto-Poche-sauvegarde-${stamp}.json`;document.body.append(link);link.click();link.remove();try{localStorage.setItem('rpx-last-backup',new Date().toISOString());}catch{}setTimeout(()=>URL.revokeObjectURL(url),1000);toast('Sauvegarde téléchargée : garde-la dans Fichiers ou iCloud Drive');}catch(error){toast(error.message||'Sauvegarde impossible.');}
 }
 async function restoreBackup(backup){
   const keys=Object.keys(backup.data).filter(key=>key.startsWith('rp-')),before=Object.fromEntries(keys.map(key=>[key,localStorage.getItem(key)]));
@@ -286,7 +286,7 @@ function favoritesPage(){
 
 function profile(){
   const firstName=profileFirstName();
-  app.innerHTML=`${topbar()}${sectionTitle('Mon profil','Vos préférences restent sur cet appareil.','home')}<section class="profile-identity"><span class="profile-avatar ${firstName?'has-name':'neutral'}">${profileInitial()}</span><div><h2>Me reconnaître</h2><p>Ce prénom est facultatif et reste uniquement sur cet iPhone.</p></div></section><form id="profile-form" class="profile-form"><label class="field"><span>Prénom</span><input name="firstName" maxlength="40" value="${escape(firstName)}" placeholder="Ex. Claire" autocomplete="given-name"></label><label class="field"><span>Nom de famille <small>(facultatif)</small></span><input name="lastName" maxlength="40" value="${escape(profileLastName())}" placeholder="Ex. Martin" autocomplete="family-name"></label><button class="profile-save" type="submit">Enregistrer</button></form><section class="profile-data"><h2>Mes données</h2><div class="profile-local-note"><span>⌁</span><p><strong>Vos données restent sur votre appareil.</strong><br>Aucun compte ni e-mail ne sont nécessaires.</p></div><section class="backup-actions"><button class="backup-action" data-backup-export><span class="backup-action-icon">↓</span><span><strong>Sauvegarder mes données</strong><small>Créer une copie dans Fichiers ou iCloud Drive</small></span></button><button class="backup-action restore" data-backup-import><span class="backup-action-icon">↑</span><span><strong>Restaurer une sauvegarde</strong><small>Remplacer les données par une copie</small></span></button></section></section><section class="profile-help"><h2>Aide</h2><p>À propos de Réperto’Poche</p><small>Version test 0.38</small></section>${nav()}`;
+  app.innerHTML=`${topbar()}${sectionTitle('Mon profil','Vos préférences restent sur cet appareil.','home')}<section class="profile-identity"><span class="profile-avatar ${firstName?'has-name':'neutral'}">${profileInitial()}</span><div><h2>Me reconnaître</h2><p>Ce prénom est facultatif et reste uniquement sur cet iPhone.</p></div></section><form id="profile-form" class="profile-form"><label class="field"><span>Prénom</span><input name="firstName" maxlength="40" value="${escape(firstName)}" placeholder="Ex. Claire" autocomplete="given-name"></label><label class="field"><span>Nom de famille <small>(facultatif)</small></span><input name="lastName" maxlength="40" value="${escape(profileLastName())}" placeholder="Ex. Martin" autocomplete="family-name"></label><button class="profile-save" type="submit">Enregistrer</button></form><section class="profile-data"><h2>Mes données</h2><div class="profile-local-note"><span>⌁</span><p><strong>Vos données restent sur votre appareil.</strong><br>Aucun compte ni e-mail ne sont nécessaires.</p></div><section class="backup-actions"><button class="backup-action" data-backup-export><span class="backup-action-icon">↓</span><span><strong>Sauvegarder mes données</strong><small>Créer une copie dans Fichiers ou iCloud Drive</small></span></button><button class="backup-action restore" data-backup-import><span class="backup-action-icon">↑</span><span><strong>Restaurer une sauvegarde</strong><small>Remplacer les données par une copie</small></span></button></section></section><section class="profile-help"><h2>Aide</h2><p>À propos de Réperto’Poche</p><small>Réperto’Poche version 57.0</small></section>${nav()}`;
   const form=$('#profile-form');
   form.addEventListener('submit',event=>{event.preventDefault();const values=new FormData(form);const firstName=String(values.get('firstName')||'').trim().replace(/\s+/g,' ').slice(0,40);const lastName=String(values.get('lastName')||'').trim().replace(/\s+/g,' ').slice(0,40);set('rp-profile',{firstName,lastName});toast(firstName||lastName?'Profil enregistré sur cet iPhone':'Profil enregistré');profile();});
   bind();
@@ -728,9 +728,9 @@ document.addEventListener('contextmenu',event=>{
 if('serviceWorker' in navigator){
   let refreshing=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;window.location.reload();}});
-  navigator.serviceWorker.register('sw.js?v=56.1',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=57.0',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
 }
-async function startApp(){let moved=0;try{moved=await migrateLegacyAttachments();await cleanupOrphanAttachments();}catch(error){console.warn('Migration des fichiers',error);}home();if(moved)toast(`${moved} fichier${moved>1?'s':''} déplacé${moved>1?'s':''} vers le stockage étendu`);}
+async function startApp(){let moved=0;try{moved=await migrateLegacyAttachments();await cleanupOrphanAttachments();}catch(error){console.warn('Migration des fichiers',error);}(rpGetEdition()?home():rpEditionChooser());if(moved)toast(`${moved} fichier${moved>1?'s':''} déplacé${moved>1?'s':''} vers le stockage étendu`);}
 startApp();
 
 
@@ -1064,3 +1064,98 @@ function remuneration(cursor=new Date().getFullYear()+'-'+String(new Date().getM
   document.querySelectorAll('[data-v52-tab]').forEach(button=>button.onclick=()=>remuneration(month,button.dataset.v52Tab));
   document.querySelector('[data-v52-edit-monthly]')?.addEventListener('click',()=>monthlyPaymentForm(month,activeTab));
 }
+
+/* v57.0 — Éditions Salarié / Intérimaire et rappel de sauvegarde.
+   Tout reste local : aucun compte, aucun réseau. Changer d’édition masque des rubriques sans rien supprimer. */
+const RP_EDITION_KEY='rp-edition',RP_EDITION_PLACE_KEY='rp-edition-place';
+const rpEditionLabels={salarie:'Salarié(e)',interim:'Intérimaire'};
+function rpGetEdition(){const value=get(RP_EDITION_KEY,null);return value==='salarie'||value==='interim'?value:null;}
+function rpIsSalarie(){return rpGetEdition()==='salarie';}
+function rpApplyEdition(){document.body.classList.toggle('ed-salarie',rpIsSalarie());}
+function rpSalariePlace(){const places=getEstablishments();if(!places.length)return null;const id=get(RP_EDITION_PLACE_KEY,'');return places.find(place=>place.id===id)||places[0];}
+function rpStamp(key){try{if(!localStorage.getItem(key))localStorage.setItem(key,new Date().toISOString());}catch{}}
+
+function rpEditionChooser(){
+  app.innerHTML=`<header class="top"><div class="brand"><i class="logo" aria-hidden="true"></i><span>Réperto’Poche</span></div></header><p class="eyebrow">Bienvenue</p><h1 class="headline">Quelle édition<br>te correspond ?</h1><p class="sub">Réperto’Poche s’adapte à ton statut. Tu pourras changer plus tard dans Mon profil : aucune donnée n’est jamais supprimée.</p><section class="edition-choices"><button class="edition-card" data-edition="salarie"><span class="edition-icon">⌂</span><span class="edition-copy"><strong>Salarié(e)</strong><small>Tous tes repères cliniques et l’annuaire téléphonique de ton établissement.</small></span><span class="chev">›</span></button><button class="edition-card" data-edition="interim"><span class="edition-icon">▣</span><span class="edition-copy"><strong>Intérimaire</strong><small>Plusieurs établissements, planning des missions et suivi des rémunérations.</small></span><span class="chev">›</span></button></section>`;
+  app.querySelectorAll('[data-edition]').forEach(button=>button.onclick=()=>rpSetEdition(button.dataset.edition,home));
+}
+function rpSetEdition(edition,after){
+  if(edition!=='salarie'&&edition!=='interim')return;
+  set(RP_EDITION_KEY,edition);rpStamp('rpx-first-run');rpApplyEdition();
+  const places=getEstablishments();
+  if(edition==='salarie'&&places.length&&!places.some(place=>place.id===get(RP_EDITION_PLACE_KEY,'')))set(RP_EDITION_PLACE_KEY,places[0].id);
+  after();
+  if(edition==='salarie'&&places.length>1)setTimeout(()=>rpChoosePlace(),250);
+}
+function rpChoosePlace(){
+  const places=getEstablishments();if(places.length<2)return;
+  menuSheet('Quel établissement garder ?',places.map(place=>({id:place.id,label:place.name,hint:place.city||'Établissement',icon:'⌂',action:()=>{set(RP_EDITION_PLACE_KEY,place.id);toast('Les autres établissements restent enregistrés, mais masqués.');rpRefresh();}})));
+}
+function rpRefresh(){if(document.querySelector('.profile-identity'))profile();else home();}
+
+/* Édition salarié : un seul établissement, sans planning, missions ni rémunération. */
+function rpSalarieEstablishments(){
+  const place=rpSalariePlace();
+  app.innerHTML=`${topbar()}${sectionTitle('Mon établissement',place?'Annuaire téléphonique et repères pratiques':'Crée ton établissement pour ajouter l’annuaire','home')}${place?`<section class="list"><button class="item establishment-item holdable" data-est="${escape(place.id)}" data-hold="est|${escape(place.id)}" aria-label="${escape(place.name)}. Maintenir pour modifier."><span class="item-icon est-icon">⌂</span><span class="item-main"><h2>${escape(place.name)}</h2><p>${escape(place.city||'Ville à renseigner')} · ${countLabel(placeResources(place).length,'ressource')} · ${countLabel(sortedContacts(place).length,'contact')}</p></span><span class="chev">›</span></button></section><p class="helper">Maintiens la fiche pour la modifier.</p>`:`${empty('Aucun établissement pour le moment.')}<button class="personal-add-button" data-add-est>＋ Créer mon établissement</button>`}${nav()}`;
+  bind();
+}
+const rpBaseEstablishments=establishments;
+establishments=function(query=''){if(rpIsSalarie())return rpSalarieEstablishments();return rpBaseEstablishments(query);};
+const rpBasePlanning=planning;
+planning=function(...args){if(rpIsSalarie())return home();return rpBasePlanning.apply(this,args);};
+const rpBaseRemuneration=remuneration;
+remuneration=function(...args){if(rpIsSalarie())return home();return rpBaseRemuneration.apply(this,args);};
+function rpSalarieCleanSearch(){
+  if(!rpIsSalarie())return;
+  const root=document.querySelector('#home-search-results:not([hidden])')||app,keep=(rpSalariePlace()||{}).id;
+  root.querySelectorAll('button[data-est]').forEach(button=>{if(button.dataset.est!==keep)button.remove();});
+  root.querySelectorAll('h2').forEach(heading=>{const next=heading.nextElementSibling,title=heading.textContent.trim(),list=next&&next.matches('section')?next:null;if(title==='Planning'||(title==='Établissements'&&list&&!list.children.length)){heading.remove();if(list)list.remove();}});
+}
+const rpBaseGlobalSearch=globalSearch;
+globalSearch=function(query){rpBaseGlobalSearch(query);rpSalarieCleanSearch();};
+const rpBaseSearchPage=searchPage;
+searchPage=function(initial=''){rpBaseSearchPage(initial);rpSalarieCleanSearch();};
+
+/* Rappel de sauvegarde (copie manuelle dans Fichiers ou iCloud Drive, sans réseau). */
+function rpBackupDays(){const raw=localStorage.getItem('rpx-backup-days'),value=Number(raw);return raw!==null&&[0,7,14,30].includes(value)?value:14;}
+function rpLastBackup(){const raw=localStorage.getItem('rpx-last-backup'),date=raw?new Date(raw):null;return date&&!isNaN(date.getTime())?date:null;}
+function rpDaysSince(date){return Math.max(0,Math.floor((Date.now()-date.getTime())/86400000));}
+function rpBackupDue(){
+  const days=rpBackupDays();if(!days)return null;rpStamp('rpx-first-run');
+  if(Number(localStorage.getItem('rpx-backup-snooze')||0)>Date.now())return null;
+  const last=rpLastBackup();
+  if(last)return rpDaysSince(last)>=days?{last}:null;
+  const first=new Date(localStorage.getItem('rpx-first-run'));return !isNaN(first.getTime())&&rpDaysSince(first)>=3?{last:null}:null;
+}
+function rpBackupBanner(){
+  const due=rpBackupDue(),host=document.querySelector('#app .search');
+  if(!due||!host||document.getElementById('backup-reminder'))return;
+  const since=due.last?rpDaysSince(due.last):0,message=due.last?`Dernière sauvegarde il y a ${since} jour${since>1?'s':''}.`:'Aucune sauvegarde pour le moment.';
+  host.insertAdjacentHTML('beforebegin',`<section id="backup-reminder" class="backup-reminder" role="status"><span class="backup-reminder-icon">↓</span><div><strong>Pense à sauvegarder tes données</strong><p>${message} Ton carnet n’est enregistré que sur cet iPhone.</p><div class="backup-reminder-actions"><button type="button" data-reminder-save>Sauvegarder</button><button type="button" class="ghost" data-reminder-later>Plus tard</button></div></div></section>`);
+  const banner=document.getElementById('backup-reminder');
+  banner.querySelector('[data-reminder-save]').onclick=async()=>{await downloadBackup();const last=rpLastBackup();if(last&&Date.now()-last.getTime()<120000)banner.remove();};
+  banner.querySelector('[data-reminder-later]').onclick=()=>{try{localStorage.setItem('rpx-backup-snooze',String(Date.now()+3*86400000));}catch{}banner.remove();};
+}
+const rpBaseHome=home;
+home=function(){
+  rpBaseHome();rpApplyEdition();
+  if(rpIsSalarie()){const tile=document.querySelector('#home-folders [data-go="establishments"]');if(tile){const place=rpSalariePlace(),title=tile.querySelector('h2'),meta=tile.querySelector('p');if(title)title.textContent='Mon établissement';if(meta)meta.textContent=place?place.name:'À créer';}}
+  rpBackupBanner();
+};
+
+/* Mon profil : édition et fréquence du rappel. */
+function rpBackupStatusText(){const last=rpLastBackup();return last?`Dernière sauvegarde : ${last.toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}`:'Aucune sauvegarde enregistrée sur cet appareil';}
+function rpFrequencyLabel(days){return days===7?'Toutes les semaines':days===14?'Toutes les 2 semaines':days===30?'Tous les mois':'Désactivé';}
+const rpBaseProfile=profile;
+profile=function(){
+  rpBaseProfile();
+  const edition=rpGetEdition(),data=document.querySelector('.profile-data');
+  if(data)data.insertAdjacentHTML('beforebegin',`<section class="profile-edition"><h2>Mon édition</h2><button class="edition-card compact" type="button" data-edition-switch><span class="edition-icon">${edition==='salarie'?'⌂':'▣'}</span><span class="edition-copy"><strong>${edition?rpEditionLabels[edition]:'Non choisie'}</strong><small>Changer d’édition</small></span><span class="chev">›</span></button><p class="helper">Changer d’édition masque ou affiche des rubriques : aucune donnée n’est supprimée.</p></section>`);
+  const actions=document.querySelector('.backup-actions');
+  if(actions)actions.insertAdjacentHTML('beforeend',`<p class="backup-status">${escape(rpBackupStatusText())}</p><button type="button" class="backup-action" data-backup-frequency><span class="backup-action-icon">↻</span><span><strong>Rappel de sauvegarde</strong><small>${rpFrequencyLabel(rpBackupDays())}</small></span></button>`);
+  const switcher=document.querySelector('[data-edition-switch]');
+  if(switcher)switcher.onclick=()=>menuSheet('Choisir mon édition',['salarie','interim'].map(id=>({id,label:rpEditionLabels[id],hint:id===edition?'Édition actuelle':(id==='salarie'?'Un établissement, sans planning ni rémunération':'Établissements, planning et rémunération'),icon:id==='salarie'?'⌂':'▣',action:()=>{if(id===edition)return;rpSetEdition(id,profile);}})));
+  const freq=document.querySelector('[data-backup-frequency]');
+  if(freq)freq.onclick=()=>menuSheet('Rappel de sauvegarde',[7,14,30,0].map(days=>({id:`d${days}`,label:rpFrequencyLabel(days),hint:days===rpBackupDays()?'Réglage actuel':(days?`Un rappel après ${days} jours sans sauvegarde`:'Aucun rappel'),icon:days?'◔':'×',action:()=>{try{localStorage.setItem('rpx-backup-days',String(days));localStorage.removeItem('rpx-backup-snooze');}catch{}profile();toast(days?'Rappel enregistré':'Rappel désactivé');}})));
+};
+rpApplyEdition();

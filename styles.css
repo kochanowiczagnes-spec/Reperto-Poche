@@ -197,3 +197,25 @@ input,textarea,select{-webkit-user-select:text;user-select:text;-webkit-touch-ca
 .personal-manager-row .personal-monogram{min-width:42px}
 .share-card-button+.share-card-help,.share-card-help{margin:18px 4px 0;line-height:1.45}
 .share-card-button{margin-bottom:0}
+/* v57.0 — éditions Salarié / Intérimaire et rappel de sauvegarde. */
+body.ed-salarie .nav button[data-go="planning"],body.ed-salarie #home-folders .folder[data-go="planning"],body.ed-salarie .remuneration-card,body.ed-salarie .remuneration-fields{display:none!important}
+.edition-choices{display:grid;gap:12px;margin:20px 0 26px}
+.edition-card{width:100%;display:flex;align-items:center;gap:14px;border:0;border-radius:20px;background:#fff;box-shadow:var(--shadow);padding:18px 16px;text-align:left;color:var(--navy);font:inherit}
+.edition-card.compact{padding:13px 14px;border-radius:17px}
+.edition-icon{flex:0 0 44px;width:44px;height:44px;border-radius:14px;background:#f1e9f8;color:#8259ad;display:grid;place-items:center;font-size:22px;font-weight:800}
+.edition-copy{flex:1 1 auto;min-width:0;display:grid;gap:4px}
+.edition-copy strong{font-size:18px}
+.edition-copy small{color:var(--muted);font-size:14px;line-height:1.4}
+.edition-card .chev{color:var(--muted);font-size:22px}
+.profile-edition{margin:18px 0 6px}
+.profile-edition h2{margin:0 0 9px}
+.backup-status{margin:10px 4px 2px;color:var(--muted);font-size:14px}
+.backup-actions .backup-action[data-backup-frequency]{margin-top:10px}
+.backup-reminder{display:flex;gap:12px;align-items:flex-start;margin:14px 0 4px;padding:14px;border-radius:18px;background:#fff6e6;border:1px solid #f1d9a6}
+.backup-reminder-icon{flex:0 0 36px;width:36px;height:36px;border-radius:50%;background:var(--yellow);color:var(--navy);display:grid;place-items:center;font-weight:800;font-size:18px}
+.backup-reminder strong{display:block;font-size:16px;margin-bottom:3px}
+.backup-reminder p{margin:0 0 10px;color:var(--muted);font-size:14px;line-height:1.45}
+.backup-reminder-actions{display:flex;gap:8px;flex-wrap:wrap}
+.backup-reminder-actions button{border:0;border-radius:11px;background:var(--navy);color:#fff;padding:10px 14px;font-weight:700;font-size:14px}
+.backup-reminder-actions button.ghost{background:transparent;color:var(--navy);border:1px solid #d9c9a3}
+.profile-edition .helper{margin-top:12px}
