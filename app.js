@@ -79,6 +79,10 @@ const getEstablishments = () => get('rp-establishments', establishmentDefaults);
 const setEstablishments = value => set('rp-establishments', value);
 const getPlanning = () => get('rp-planning', planningDefaults);
 const setPlanning = value => set('rp-planning', value);
+// v54 — espaces personnels : collection optionnelle, sans migration des données existantes.
+const personalFolderDefaults = [];
+const getPersonalFolders = () => get('rp-personal-folders', personalFolderDefaults);
+const setPersonalFolders = value => set('rp-personal-folders', value);
 const getSurgerySpecialties = () => get('rp-surgery-specialties', surgerySpecialtyDefaults);
 const setSurgerySpecialties = value => set('rp-surgery-specialties', value);
 const getAnesthesiaTerrains = () => get('rp-anesthesia-terrains', anesthesiaTerrainDefaults);
@@ -95,12 +99,14 @@ const backupCollections = {
   'rp-anesthesia-terrains': anesthesiaTerrainDefaults,
   'rp-pediatrics': pediatricsDefaults,
   'rp-emergencies': emergencyDefaults,
-  'rp-favorites': []
+  'rp-favorites': [],
+  // Optionnel : absent des sauvegardes v53, donc restauré vide sans modifier le reste.
+  'rp-personal-folders': personalFolderDefaults
 };
 const backupCollectionKeys = Object.keys(backupCollections);
 // Les sauvegardes antérieures aux nouvelles rubriques restent restaurables :
 // les collections absentes sont créées vides, sans toucher aux données existantes.
-const requiredBackupKeys = backupCollectionKeys.filter(key=>!['rp-surgery','rp-surgery-specialties','rp-anesthesia-terrains','rp-pediatrics','rp-emergencies','rp-favorites'].includes(key));
+const requiredBackupKeys = backupCollectionKeys.filter(key=>!['rp-surgery','rp-surgery-specialties','rp-anesthesia-terrains','rp-pediatrics','rp-emergencies','rp-favorites','rp-personal-folders'].includes(key));
 function backupData(){
   const data=Object.fromEntries(backupCollectionKeys.map(key=>[key,get(key,backupCollections[key])]));
   for(let index=0;index<localStorage.length;index++){const key=localStorage.key(index);if(!key||!key.startsWith('rp-')||key in data)continue;try{data[key]=JSON.parse(localStorage.getItem(key));}catch{}}
@@ -151,11 +157,19 @@ const resourceTypeLabel = attachment => isPhotoAttachment(attachment) ? 'Photo' 
 const isPhotoAttachment = attachment => /^image\//i.test((attachment||{}).type||'') || /\.(jpe?g|png|gif|webp|heic|heif)$/i.test((attachment||{}).name||'');
 const contactRoleLabel = contact => [contact.role,contact.grade].filter(Boolean).join(' · ');
 
+const personalFolderColors=['raspberry','turquoise','lilac','terracotta','sage','yellow'];
+const personalFolderColorLabel={raspberry:'Framboise',turquoise:'Turquoise',lilac:'Lilas',terracotta:'Terracotta',sage:'Sauge',yellow:'Jaune'};
+const normalizeSections=value=>String(value||'').split(/[,\n]/).map(item=>item.trim().replace(/\s+/g,' ').slice(0,48)).filter(Boolean).filter((item,index,list)=>list.findIndex(other=>searchText(other)===searchText(item))===index).slice(0,12);
+function personalFolderCard(folder){const sections=Array.isArray(folder.sections)?folder.sections:[];const meta=sections.length?`${sections.length} section${sections.length>1?'s':''}`:'Dossier simple';return `<button class="folder personal-folder ${escape(folder.color||'lilac')}" data-personal-folder="${escape(folder.id)}"><span class="personal-monogram">AK</span><h2>${escape(folder.name)}</h2><p>${escape(meta)}</p></button>`;}
+function personalFoldersSection(){const folders=[...getPersonalFolders()].sort(sortByName);return `<section class="personal-folders-wrap"><div class="home-section-head"><div><h2>Mes dossiers</h2><p>Des espaces à toi, simples ou organisés.</p></div></div><div class="grid personal-folders">${folders.map(personalFolderCard).join('')}<button class="create-personal-folder" data-add-personal-folder><span>＋</span><strong>Créer mon dossier</strong><small>Classe tes fiches à ta façon</small></button></div></section>`;}
+function personalFolderDetail(id){const folder=getPersonalFolders().find(item=>item.id===id);if(!folder)return home();const sections=Array.isArray(folder.sections)?folder.sections:[];app.innerHTML=`${topbar()}${sectionTitle(escape(folder.name),'Dossier personnel', 'home')}<section class="personal-folder-hero ${escape(folder.color||'lilac')}"><span class="personal-monogram">AK</span><div><strong>${sections.length?'Classeur organisé':'Dossier simple'}</strong><p>${sections.length?'Ses sections sont prêtes à accueillir tes fiches.':'Tu pourras y ranger tes fiches et fichiers.'}</p></div></section>${sections.length?`<section class="personal-sections">${sections.map(section=>`<article class="personal-section"><span>${escape(section.slice(0,1).toUpperCase())}</span><div><h2>${escape(section)}</h2><p>Aucune fiche pour le moment</p></div></article>`).join('')}</section>`:`<p class="empty personal-empty">Ce dossier est vide pour l’instant.<br>Les fiches pourront être ajoutées ou importées ici.</p>`}<button class="secondary personal-edit" data-edit-personal-folder="${escape(folder.id)}">Modifier ce dossier</button>${nav('home')}`;bind();}
+function personalFolderForm(existing){const folder=existing||{name:'',color:'lilac',sections:[]};openSheet(`${existing?'Modifier':'Créer'} mon dossier`,`<p class="sheet-intro">Un dossier simple suffit. Ajoute des sections seulement si tu veux en faire un classeur.</p><div class="field"><label>Nom du dossier</label><input required name="name" maxlength="48" value="${escape(folder.name)}" placeholder="Ex. Cours IADE, Échographie"></div><div class="field"><label>Couleur</label><select name="color">${personalFolderColors.map(color=>`<option value="${color}" ${folder.color===color?'selected':''}>${personalFolderColorLabel[color]}</option>`).join('')}</select></div><div class="field"><label>Sections (facultatif)</label><textarea name="sections" placeholder="Ex. Cardiovasculaire, Respiratoire, À relire">${escape((folder.sections||[]).join(', '))}</textarea><small class="field-help">Sépare les sections par une virgule ou un retour à la ligne.</small></div>`,values=>{const name=String(values.name||'').trim().replace(/\s+/g,' ').slice(0,48);if(!name)throw new Error('Donne un nom au dossier.');const entry={id:existing?existing.id:uid('folder'),name,color:personalFolderColors.includes(values.color)?values.color:'lilac',sections:normalizeSections(values.sections),updatedAt:Date.now()};const list=getPersonalFolders();setPersonalFolders(existing?list.map(item=>item.id===existing.id?{...item,...entry}:item):[...list,entry]);if(existing)personalFolderDetail(entry.id);else home();toast(existing?'Dossier mis à jour':'Dossier personnel créé');});}
+
 function home(){
   const est = getEstablishments(); const events = getPlanning(), favorites=getFavorites();
   app.innerHTML = `${topbar()}<p class="eyebrow">${profileGreeting()}</p><h1 class="headline">Tout retrouver,<br>même dans l’urgence.</h1><p class="sub">Ton carnet professionnel, toujours dans la poche.</p>
   <label class="search"><span>⌕</span><input id="global-search" placeholder="Rechercher dans Réperto’Poche" autocomplete="off" /></label>
-  <section id="home-folders" class="grid">${category('favorites','★','Favoris',favorites.length?`${favorites.length} repère${favorites.length>1?'s':''}`:'À épingler','favorites')}${category('emergencies','!','Urgences',`${get('rp-emergencies', emergencyDefaults).length} repère${get('rp-emergencies', emergencyDefaults).length>1?'s':''}`,'emergencies')}${category('est','⌂','Établissements',`${est.length} lieux`,'establishments')}${category('med','●','Médicaments',`${getMeds().length} fiches`,'meds')}${category('surgery','✚','Chirurgies',`${getSurgerySpecialties().length} spécialité${getSurgerySpecialties().length>1?'s':''}`,'surgery')}${category('anesthesia','◌','Anesthésies',`${getAnesthesiaTerrains().length} terrain${getAnesthesiaTerrains().length>1?'s':''}`,'anesthesia')}${category('pediatrics','♧','Pédiatrie',`${get('rp-pediatrics', pediatricsDefaults).length} repère${get('rp-pediatrics', pediatricsDefaults).length>1?'s':''}`,'pediatrics')}${category('lang','文','Langues',`${get('rp-languages', languageDefaults).length} dossiers`,'languages')}${category('docs','▤','Protocoles',`${get('rp-protocols', protocolDefaults).length} document${get('rp-protocols', protocolDefaults).length>1?'s':''}`,'protocols')}${category('notes','✎','Notes rapides',`${get('rp-notes', noteDefaults).length} note${get('rp-notes', noteDefaults).length>1?'s':''}`,'notes')}${category('plan','□','Planning',events.length ? `${events.length} créneau${events.length>1?'x':''}` : 'À organiser','planning')}</section><section id="home-search-results" class="search-results" hidden></section>${nav('home')}`;
+  <section id="home-folders" class="grid">${category('favorites','★','Favoris',favorites.length?`${favorites.length} repère${favorites.length>1?'s':''}`:'À épingler','favorites')}${category('emergencies','!','Urgences',`${get('rp-emergencies', emergencyDefaults).length} repère${get('rp-emergencies', emergencyDefaults).length>1?'s':''}`,'emergencies')}${category('est','⌂','Établissements',`${est.length} lieux`,'establishments')}${category('med','●','Médicaments',`${getMeds().length} fiches`,'meds')}${category('surgery','✚','Chirurgies',`${getSurgerySpecialties().length} spécialité${getSurgerySpecialties().length>1?'s':''}`,'surgery')}${category('anesthesia','◌','Anesthésies',`${getAnesthesiaTerrains().length} terrain${getAnesthesiaTerrains().length>1?'s':''}`,'anesthesia')}${category('pediatrics','♧','Pédiatrie',`${get('rp-pediatrics', pediatricsDefaults).length} repère${get('rp-pediatrics', pediatricsDefaults).length>1?'s':''}`,'pediatrics')}${category('lang','文','Langues',`${get('rp-languages', languageDefaults).length} dossiers`,'languages')}${category('docs','▤','Protocoles',`${get('rp-protocols', protocolDefaults).length} document${get('rp-protocols', protocolDefaults).length>1?'s':''}`,'protocols')}${category('notes','✎','Notes rapides',`${get('rp-notes', noteDefaults).length} note${get('rp-notes', noteDefaults).length>1?'s':''}`,'notes')}${category('plan','□','Planning',events.length ? `${events.length} créneau${events.length>1?'x':''}` : 'À organiser','planning')}</section>${personalFoldersSection()}<section id="home-search-results" class="search-results" hidden></section>${nav('home')}`;
   $('#global-search').addEventListener('input', e => globalSearch(e.target.value)); bind();
 }
 
@@ -519,6 +533,9 @@ function bind(){
   document.querySelectorAll('[data-med]').forEach(button=>button.onclick=()=>medDetail(button.dataset.med));
   document.querySelectorAll('[data-med-class]').forEach(button=>button.onclick=()=>meds(button.dataset.medClass));
   document.querySelectorAll('[data-est]').forEach(button=>button.onclick=()=>establishmentDetail(button.dataset.est));
+  document.querySelectorAll('[data-personal-folder]').forEach(button=>button.onclick=()=>personalFolderDetail(button.dataset.personalFolder));
+  document.querySelectorAll('[data-add-personal-folder]').forEach(button=>button.onclick=()=>personalFolderForm());
+  document.querySelectorAll('[data-edit-personal-folder]').forEach(button=>button.onclick=()=>{const folder=getPersonalFolders().find(item=>item.id===button.dataset.editPersonalFolder);if(folder)personalFolderForm(folder);});
   document.querySelectorAll('[data-add-med]').forEach(button=>button.onclick=()=>medForm());
   document.querySelectorAll('[data-edit-med]').forEach(button=>button.onclick=()=>medForm(getMeds().find(item=>item.id===button.dataset.editMed)));
   document.querySelectorAll('[data-add-est]').forEach(button=>button.onclick=()=>establishmentForm());
