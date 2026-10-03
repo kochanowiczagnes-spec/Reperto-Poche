@@ -219,3 +219,14 @@ body.ed-salarie .nav button[data-go="planning"],body.ed-salarie #home-folders .f
 .backup-reminder-actions button{border:0;border-radius:11px;background:var(--navy);color:#fff;padding:10px 14px;font-weight:700;font-size:14px}
 .backup-reminder-actions button.ghost{background:transparent;color:var(--navy);border:1px solid #d9c9a3}
 .profile-edition .helper{margin-top:12px}
+
+/* v57.1 — tous les fichiers joints s’affichent comme les ressources d’établissement ; carte « Créer mon dossier » mieux alignée. */
+.attachment-card-wrap{margin:12px 0 0}
+.attachment-card{min-width:0}
+.attachment-card .resource-main strong{font-size:15px;line-height:1.3}
+.attachment-card .chev{position:static;transform:none;flex:0 0 auto;font-size:22px;color:#9ca5b3}
+.detail-card .attachment-card{background:#faf6ef;box-shadow:none;border:1px solid var(--line)}
+.create-personal-folder{display:grid!important;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:13px;row-gap:1px;align-items:center;align-content:center}
+.create-personal-folder>span{grid-row:1/3;grid-column:1}
+.create-personal-folder strong{grid-column:2;grid-row:1;align-self:end}
+.create-personal-folder small{grid-column:2;grid-row:2;align-self:start;margin:0!important}
