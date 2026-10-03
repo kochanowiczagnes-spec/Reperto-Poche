@@ -175,3 +175,17 @@ input,textarea,select{-webkit-user-select:text;user-select:text;-webkit-touch-ca
 #home-folders .folder .icon .approved-home-icon{border-radius:10px}
 @media(max-width:380px){#home-folders .folder{min-height:94px}#home-folders .folder .icon{width:32px;height:32px;flex-basis:32px}}
 @media(min-width:760px){#home-folders .folder{min-height:110px}#home-folders .folder .icon{width:40px;height:40px;flex-basis:40px}}
+
+/* v56.0 — dossiers personnels sur 3 niveaux : sous-dossiers, fiches, options et partage. */
+.pf-list{gap:9px}
+.pf-row{display:flex;gap:8px;align-items:stretch}
+.pf-row>.item{flex:1 1 auto;min-width:0;width:auto}
+.pf-icon{background:#f1e9f8;color:#8259ad;font-weight:850}
+.pf-more{flex:0 0 46px;border:0;border-radius:16px;background:#fff;box-shadow:var(--shadow);color:var(--navy);font-size:22px;line-height:1;padding:0}
+.pf-empty{padding:16px 10px}
+.pf-fiche{margin-bottom:0}
+.pf-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.pf-actions button{flex:1 1 auto;border:1px solid var(--navy);background:#fff;color:var(--navy);border-radius:11px;padding:10px 12px;font-weight:700;font-size:14px}
+.pf-actions .pf-danger{border-color:#e7b3bf;color:#a12645;background:#fff4f6}
+.pf-node-actions{margin:22px 0 6px}
+.personal-manager-row .pf-manager-more,.personal-manager-row button[data-pf-act]{padding:8px 11px;font-size:16px}
