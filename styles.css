@@ -153,3 +153,6 @@ input,textarea,select{-webkit-user-select:text;user-select:text;-webkit-touch-ca
 
 /* v54.9 — pictogrammes pleins : repères immédiats et homogènes sur les cartes d’accueil. */
 #home-folders .folder .icon svg.solid-icon{fill:currentColor!important;stroke:none!important}#home-folders .folder .icon svg.solid-icon *{stroke:none!important}
+
+/* v55.0 — aplats fidèles à la planche : formes épaisses arrondies et découpes crème. */
+#home-folders .folder .icon svg.soft-solid{fill:currentColor!important;stroke:none!important}#home-folders .folder .icon svg.soft-solid *{stroke:none!important}#home-folders .folder .icon svg.soft-solid .cut{fill:var(--icon-bg)!important}
