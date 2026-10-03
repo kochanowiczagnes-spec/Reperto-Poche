@@ -615,7 +615,7 @@ document.addEventListener('contextmenu',event=>{
 if('serviceWorker' in navigator){
   let refreshing=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;window.location.reload();}});
-  navigator.serviceWorker.register('sw.js?v=55.4',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=55.5',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
 }
 async function startApp(){let moved=0;try{moved=await migrateLegacyAttachments();await cleanupOrphanAttachments();}catch(error){console.warn('Migration des fichiers',error);}home();if(moved)toast(`${moved} fichier${moved>1?'s':''} déplacé${moved>1?'s':''} vers le stockage étendu`);}
 startApp();
