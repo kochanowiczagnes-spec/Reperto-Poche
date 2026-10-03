@@ -156,3 +156,11 @@ input,textarea,select{-webkit-user-select:text;user-select:text;-webkit-touch-ca
 
 /* v55.0 — aplats fidèles à la planche : formes épaisses arrondies et découpes crème. */
 #home-folders .folder .icon svg.soft-solid{fill:currentColor!important;stroke:none!important}#home-folders .folder .icon svg.soft-solid *{stroke:none!important}#home-folders .folder .icon svg.soft-solid .cut{fill:var(--icon-bg)!important}
+
+/* v55.1 — direction de référence : aplats doux et action d’importation effacée. */
+#home-folders .folder .icon svg.reference-solid{fill:currentColor!important;stroke:none!important}#home-folders .folder .icon svg.reference-solid *{stroke:none!important}#home-folders .folder .icon svg.reference-solid .cut{fill:var(--icon-bg)!important}
+.personal-section-actions{display:flex;align-items:center;gap:9px;white-space:nowrap}.personal-import-link{display:grid!important;place-items:center;width:28px;height:28px;padding:0!important;border:0!important;border-radius:8px!important;background:transparent!important;color:#687386!important;font-size:0!important}.personal-import-link:before,.personal-import-link:after{content:none!important;display:none!important}.personal-import-link svg{display:block;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.personal-import-link:active{background:#f0ece7!important}.personal-manage-link{font-size:12px!important;color:#513fb0!important;padding:6px 0!important}.home-section-head{align-items:center!important}.home-section-head p{max-width:230px}
+
+/* v55.3 — aplats de la planche retenue : formes épaisses, simples, découpes crème. */
+#home-folders .folder .icon svg.selected-solid{fill:currentColor!important;stroke:none!important}#home-folders .folder .icon svg.selected-solid *{stroke:none!important}#home-folders .folder .icon svg.selected-solid .cut{fill:var(--icon-bg)!important}
+.personal-section-actions{gap:7px!important}.personal-import-link{width:25px!important;height:25px!important;opacity:.72}.personal-import-link svg{width:15px!important;height:15px!important}.personal-import-link:hover,.personal-import-link:focus-visible{opacity:1;background:#f0ece7!important}
