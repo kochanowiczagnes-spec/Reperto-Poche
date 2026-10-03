@@ -149,3 +149,7 @@ input,textarea,select{-webkit-user-select:text;user-select:text;-webkit-touch-ca
 #home-folders .favorites{background:#fffaf0}#home-folders .emergencies{background:#fff6f8}#home-folders .est{background:#fff8f6}#home-folders .med{background:#f4fcf8}#home-folders .surgery{background:#f8f6ff}#home-folders .anesthesia{background:#f4f9ff}#home-folders .pediatrics{background:#fffaf0}#home-folders .lang{background:#f4f9ff}#home-folders .docs{background:#fff7f4}#home-folders .notes{background:#f9f6ff}#home-folders .plan{background:#f2fcfc}
 .personal-folders-wrap{margin-top:26px;padding-top:18px}.home-section-head h2{font-size:21px}.home-section-head p{font-size:12px}.create-personal-folder{min-height:76px;padding:12px 13px;border:1px dashed #d7c9ff;box-shadow:none;background:#fffdff}.create-personal-folder>span{width:40px;height:40px;font-size:28px}.create-personal-folder strong{font-size:15px}
 @media(max-width:380px){#home-folders .folder{min-height:110px;padding:11px}#home-folders .folder .icon{width:44px;height:44px;flex-basis:44px}.folder h2,#home-folders .folder h2{font-size:14px}}
+
+
+/* v54.9 — pictogrammes pleins : repères immédiats et homogènes sur les cartes d’accueil. */
+#home-folders .folder .icon svg.solid-icon{fill:currentColor!important;stroke:none!important}#home-folders .folder .icon svg.solid-icon *{stroke:none!important}
