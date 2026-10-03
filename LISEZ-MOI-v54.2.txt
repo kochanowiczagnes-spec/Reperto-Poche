@@ -1,0 +1,16 @@
+RÉPERTO’POCHE v54.2 — PRÉPARATION PARTAGE
+
+Cette archive contient la version de préparation v54.2 de Réperto’Poche.
+
+Nouveautés :
+- dossiers personnels locaux ;
+- partage volontaire de fiches ;
+- aperçu, choix de destination et confirmation avant import ;
+- partage disponible pour Médicaments, Chirurgies, Anesthésies, ressources et notes de langues.
+
+Important :
+- cette archive ne publie rien et ne modifie pas la version v53 ;
+- les données restent locales à chaque appareil ;
+- aucun partage ni import n’est automatique.
+
+Pour mettre à jour un site, remplacer les fichiers de la version de préparation uniquement après validation finale.
