@@ -144,17 +144,17 @@ const nav = (active='home') => `<nav class="nav" aria-label="Navigation principa
 </nav>`;
 const topbar = () => `<header class="top">${logo()}<button class="avatar ${profileFirstName()?'has-name':'neutral'}" data-go="profile" aria-label="Mon profil">${profileInitial()}</button></header>`;
 const homeIcons={
-  favorites:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.75 5.57 6.15.89-4.45 4.34 1.05 6.13L12 17l-5.5 2.93 1.05-6.13L3.1 9.46l6.15-.89L12 3Z"/></svg>',
-  emergencies:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
-  est:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V7h10v14M14 11h6v10M7 11h4m-4 4h4m4 1h2m-2-3h2M8 4h2v3"/><path d="M9 3v4M7 5h4"/></svg>',
-  med:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8.4 17.6-2-2a4.25 4.25 0 0 1 0-6l3.2-3.2a4.25 4.25 0 0 1 6 6l-3.2 3.2a4.25 4.25 0 0 1-4 1.1Z"/><path d="m8.1 8.1 7.8 7.8"/></svg>',
-  surgery:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v16M4 12h16"/></svg>',
-  anesthesia:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.5 4C8 5.3 6 8.3 6 12.4c0 3.5 1.6 5.9 4.8 6.6.8-2.1 1-4.6.7-7.4M12.5 4c3.5 1.3 5.5 4.3 5.5 8.4 0 3.5-1.6 5.9-4.8 6.6-.8-2.1-1-4.6-.7-7.4"/></svg>',
-  pediatrics:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M8 7 6 5m10 2 2-2M9.5 13h.01M14.5 13h.01M10 16c1.2.9 2.8.9 4 0"/></svg>',
-  lang:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h10a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3H9l-4 3v-3.5A3 3 0 0 1 4 13V5Z"/><path d="M17 10h1a2 2 0 0 1 2 2v5l-3-2h-2"/></svg>',
-  docs:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="12" height="16" rx="2"/><path d="M9 4V3h6v1M9 10h6m-6 4h6"/></svg>',
-  notes:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10a2 2 0 0 1 2 2v13a1 1 0 0 1-1.6.8L15 18H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2Z"/><path d="M5 8h2m-2 4h2m-2 4h2"/></svg>',
-  plan:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4m8-4v4M4 10h16m-4 4v3m0 0-2-2m2 2 2-2"/></svg>'
+  favorites:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 14.4 8l5 .7-3.6 3.5.85 5-4.65-2.45-4.65 2.45.85-5L4.6 8.7l5-.7L12 3.5Z"/><path d="M12 7.4v4.2m-2.1-2.1h4.2"/></svg>',
+  emergencies:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><path d="M12 7v10M7 12h10"/><path d="m15.5 3.8-1.2 2.5"/></svg>',
+  est:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V7.5A2.5 2.5 0 0 1 7.5 5h6A2.5 2.5 0 0 1 16 7.5V20"/><path d="M16 10h2a1 1 0 0 1 1 1v9M3 20h18M8 9h1m3 0h1M8 13h1m3 0h1M10.5 17v3"/></svg>',
+  med:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8.2 17.8-2-2a4.25 4.25 0 0 1 0-6l3.6-3.6a4.25 4.25 0 0 1 6 6l-3.6 3.6a4.25 4.25 0 0 1-6 0Z"/><path d="m8.5 8.5 7 7M5 18.5l1.5-1.5m11-10 1.5-1.5"/></svg>',
+  surgery:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 19 7.8-7.8M13.8 10.2 17 7a2.15 2.15 0 1 1 3 3l-3.2 3.2"/><path d="m4 20 2.6-.6-2-2L4 20ZM8 6l3.3 3.3M6.5 4.5l4.8 4.8"/></svg>',
+  anesthesia:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8.5c1.4-1.5 3.1-2.3 5-2.3s3.6.8 5 2.3v4.1c-1.4 2.8-3.1 4.2-5 4.2s-3.6-1.4-5-4.2V8.5Z"/><path d="M7 10 4.5 8.5M17 10l2.5-1.5M9.5 12h5M12 16.8V20m-2 0h4"/></svg>',
+  pediatrics:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12.5" r="6.5"/><path d="M7.3 7.8 5.5 5.5M16.7 7.8l1.8-2.3M9.5 12h.01M14.5 12h.01M9.5 15.2c1.4 1.1 3.6 1.1 5 0"/></svg>',
+  lang:'<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M4.5 12h15M12 4c2 2.2 3 4.9 3 8s-1 5.8-3 8c-2-2.2-3-4.9-3-8s1-5.8 3-8Z"/></svg>',
+  docs:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4h7l3 3v12a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 7 19V5.5A1.5 1.5 0 0 1 8.5 4Z"/><path d="M15 4v4h4M10 12h4m-4 3h4"/></svg>',
+  notes:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4.5h8.5L18 8v11.5A1.5 1.5 0 0 1 16.5 21h-9A1.5 1.5 0 0 1 6 19.5v-15Z"/><path d="M14.5 4.5V8H18M9 16.5l.5-2.2 4.8-4.8a1.4 1.4 0 0 1 2 2l-4.8 4.8-2.2.7Z"/></svg>',
+  plan:'<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4m8-4v4M4 10h16M9 14h3v3H9zM15 14h1"/></svg>'
 };
 const category = (cls, title, meta, target) => `<button class="folder ${cls}" data-go="${target}"><span class="icon">${homeIcons[cls]||''}</span><span class="folder-copy"><h2>${title}</h2><p>${meta}</p></span><span class="folder-chevron">›</span></button>`;
 const searchText = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr');
