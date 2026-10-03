@@ -144,17 +144,17 @@ const nav = (active='home') => `<nav class="nav" aria-label="Navigation principa
 </nav>`;
 const topbar = () => `<header class="top">${logo()}<button class="avatar ${profileFirstName()?'has-name':'neutral'}" data-go="profile" aria-label="Mon profil">${profileInitial()}</button></header>`;
 const homeIcons={
-  favorites:'<svg class="solid-icon selected-solid" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 2.9 2.5 5.08 5.6.82-4.05 3.95.96 5.57L12 15.72l-5.01 2.64.96-5.57-4.05-3.95 5.6-.82L12 2.9Z"/></svg>',
-  emergencies:'<svg class="solid-icon selected-solid" viewBox="0 0 24 24" aria-hidden="true"><rect x="8.3" y="3.15" width="7.4" height="17.7" rx="1.6"/><rect x="3.15" y="8.3" width="17.7" height="7.4" rx="1.6"/></svg>',
-  est:'<svg class="solid-icon selected-solid" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20.5V7.35A1.6 1.6 0 0 1 6.6 5.75h5.8A1.6 1.6 0 0 1 14 7.35V9h3.4a1.6 1.6 0 0 1 1.6 1.6v9.9H5Z"/><path class="cut" d="M9.35 4h1.3v3.35h-1.3zM7.55 4.95h4.9v1.3h-4.9zM8 9.5h1.65v1.8H8zm3.05 0h1.65v1.8h-1.65zM8 13h1.65v1.8H8zm3.05 0h1.65v1.8h-1.65zM15.65 12.2h1.5V14h-1.5zm0 3.35h1.5v1.8h-1.5z"/></svg>',
-  med:'<svg class="solid-icon selected-solid" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.1 17.9a4.4 4.4 0 0 1 0-6.22l5.58-5.58a4.4 4.4 0 1 1 6.22 6.22l-5.58 5.58a4.4 4.4 0 0 1-6.22 0Zm1.56-1.56a2.2 2.2 0 0 0 3.1 0l2.48-2.48-3.1-3.1-2.48 2.48a2.2 2.2 0 0 0 0 3.1Z"/><path class="cut" d="m10.35 10.65 3.1 3.1 1.2-1.2-3.1-3.1z"/></svg>',
-  surgery:'<svg class="solid-icon selected-solid" viewBox="0 0 24 24" aria-hidden="true"><path d="m20.05 4.15-1.4-1.4-4.62 4.62-1.5-1.5.98-.98-1.4-1.4-.98.98-1.06-1.06-1.55 1.55 1.06 1.06-5.37 5.37a3.8 3.8 0 1 0 5.38 5.38l5.37-5.37 1.06 1.06 1.55-1.55-1.06-1.06.98-.98-1.4-1.4-.98.98-1.5-1.5 4.62-4.62ZM9.2 17.38a1.48 1.48 0 1 1-2.1-2.1 1.48 1.48 0 0 1 2.1 2.1Z"/></svg>',
-  anesthesia:'<svg class="solid-icon selected-solid" viewBox="0 0 24 24" aria-hidden="true"><path d="M7.05 7.55C8.4 6.2 10.05 5.52 12 5.52s3.6.68 4.95 2.03v5.1c-1.35 2.4-3 3.6-4.95 3.6s-3.6-1.2-4.95-3.6v-5.1Zm2.4 2.7v2.15h5.1v-2.15h-5.1ZM5.7 9.25 3.35 7.9v2.8l2.35 1.35v-2.8Zm12.6 0v2.8l2.35-1.35V7.9L18.3 9.25ZM10.7 16v3.75H8.35v1.7h7.3v-1.7H13.3V16h-2.6Z"/></svg>',
-  pediatrics:'<svg class="solid-icon selected-solid" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5.1a6.9 6.9 0 1 0 0 13.8 6.9 6.9 0 0 0 0-13.8Zm-3.55 5.35a1.05 1.05 0 1 1 0-2.1 1.05 1.05 0 0 1 0 2.1Zm7.1 0a1.05 1.05 0 1 1 0-2.1 1.05 1.05 0 0 1 0 2.1ZM12 16.28c-1.45 0-2.78-.52-3.73-1.43l1.05-1.08a3.7 3.7 0 0 0 5.36 0l1.05 1.08A5.2 5.2 0 0 1 12 16.28Z"/><path d="m7.15 6.28-1.8-2.05-1.23 1.1 1.85 2.1 1.18-1.15Zm9.7 0 1.8-2.05 1.23 1.1-1.85 2.1-1.18-1.15Z"/></svg>',
-  lang:'<svg class="solid-icon selected-solid" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17Zm-5.78 7.2h2.3c.1-1.75.5-3.35 1.12-4.6a6.33 6.33 0 0 0-3.42 4.6Zm0 2.6a6.33 6.33 0 0 0 3.42 4.6c-.62-1.25-1.02-2.85-1.12-4.6h-2.3ZM12 18.4c-.82-1.16-1.42-3-1.54-5.1h3.08c-.12 2.1-.72 3.94-1.54 5.1Zm-1.54-7.7C10.58 8.6 11.18 6.76 12 5.6c.82 1.16 1.42 3 1.54 5.1h-3.08Zm3.08 0c.1-1.75.5-3.35 1.12-4.6a6.33 6.33 0 0 1 3.42 4.6h-2.3Zm0 2.6h2.3a6.33 6.33 0 0 1-3.42 4.6c.62-1.25 1.02-2.85 1.12-4.6Z"/></svg>',
-  docs:'<svg class="solid-icon selected-solid" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.35 3.5h7.9L19 8.25v11.4c0 1.02-.83 1.85-1.85 1.85H6.35A1.85 1.85 0 0 1 4.5 19.65V5.35c0-1.02.83-1.85 1.85-1.85ZM14 6.2v3.05h3.05L14 6.2ZM7.95 11v1.72h8.1V11h-8.1Zm0 3.72v1.72h8.1v-1.72h-8.1Z"/></svg>',
-  notes:'<svg class="solid-icon selected-solid" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.35 3.5h7.9L19 8.25v11.4c0 1.02-.83 1.85-1.85 1.85H6.35A1.85 1.85 0 0 1 4.5 19.65V5.35c0-1.02.83-1.85 1.85-1.85ZM14 6.2v3.05h3.05L14 6.2ZM9.1 17.2l.48-2.05 4.85-4.85 1.58 1.58-4.85 4.85-2.06.47Zm6.05-7.5.58-.58a1.12 1.12 0 0 0-1.58-1.58l-.58.58 1.58 1.58Z"/></svg>',
-  plan:'<svg class="solid-icon selected-solid" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h2v2h6V3h2v2h1.25A1.75 1.75 0 0 1 20 6.75v11.5A1.75 1.75 0 0 1 18.25 20H5.75A1.75 1.75 0 0 1 4 18.25V6.75A1.75 1.75 0 0 1 5.75 5H7V3Zm-1 6v9h12V9H6Zm2 2h3v3H8v-3Zm5 0h3v1.72h-3V11Zm0 3h3v1.72h-3V14Z"/></svg>'
+  favorites:'<img class="approved-home-icon" src="assets/home-icons-v55-4/favorites.png" alt="">',
+  emergencies:'<img class="approved-home-icon" src="assets/home-icons-v55-4/emergencies.png" alt="">',
+  est:'<img class="approved-home-icon" src="assets/home-icons-v55-4/est.png" alt="">',
+  med:'<img class="approved-home-icon" src="assets/home-icons-v55-4/med.png" alt="">',
+  surgery:'<img class="approved-home-icon" src="assets/home-icons-v55-4/surgery.png" alt="">',
+  anesthesia:'<img class="approved-home-icon" src="assets/home-icons-v55-4/anesthesia.png" alt="">',
+  pediatrics:'<img class="approved-home-icon" src="assets/home-icons-v55-4/pediatrics.png" alt="">',
+  lang:'<img class="approved-home-icon" src="assets/home-icons-v55-4/lang.png" alt="">',
+  docs:'<img class="approved-home-icon" src="assets/home-icons-v55-4/docs.png" alt="">',
+  notes:'<img class="approved-home-icon" src="assets/home-icons-v55-4/notes.png" alt="">',
+  plan:'<img class="approved-home-icon" src="assets/home-icons-v55-4/plan.png" alt="">'
 };
 const category = (cls, title, meta, target) => `<button class="folder ${cls}" data-go="${target}"><span class="icon">${homeIcons[cls]||''}</span><span class="folder-copy"><h2>${title}</h2><p>${meta}</p></span><span class="folder-chevron">›</span></button>`;
 const searchText = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr');
@@ -615,7 +615,7 @@ document.addEventListener('contextmenu',event=>{
 if('serviceWorker' in navigator){
   let refreshing=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!refreshing){refreshing=true;window.location.reload();}});
-  navigator.serviceWorker.register('sw.js?v=47.3',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
+  navigator.serviceWorker.register('sw.js?v=55.4',{updateViaCache:'none'}).then(registration=>registration.update()).catch(()=>{});
 }
 async function startApp(){let moved=0;try{moved=await migrateLegacyAttachments();await cleanupOrphanAttachments();}catch(error){console.warn('Migration des fichiers',error);}home();if(moved)toast(`${moved} fichier${moved>1?'s':''} déplacé${moved>1?'s':''} vers le stockage étendu`);}
 startApp();
